@@ -2,11 +2,9 @@ export type WhisperModel = {
   id: string;
   name: string;
   vram: string;
-  speed: string;
-  accuracy: string;
   downloaded: boolean;
   recommended: boolean;
-  description: string;
+  desc: string;
 };
 
 export type CopyResult = {
@@ -21,18 +19,10 @@ export type EnvironmentStatus = {
   dataDir: string;
   hasFfmpeg: boolean;
   hasFfprobe: boolean;
-  hasDeepgramKey: boolean;
-  hasAnthropicKey: boolean;
-  hasDeepseekKey: boolean;
-  hasGeminiKey: boolean;
-  hasOpenaiKey: boolean;
-  hasOpenrouterKey: boolean;
-  hasGroqKey: boolean;
   llmProvider: string;
   hasLocalWhisperModel: boolean;
   hasOllama: boolean;
   hasLmStudio?: boolean;
-  hasYtdlp: boolean;
   installedOllamaModels?: string[];
   installedLmStudioModels?: string[];
   whisperModels?: WhisperModel[];
@@ -49,7 +39,7 @@ export type Project = {
   aspectRatio?: string | null;
   sourceExists?: boolean;
   projectDir?: string | null;
-  workflowGoal?: "clips" | "autoedit";
+  workflowGoal?: "clips";
   createdAt: string;
   updatedAt: string;
 };
@@ -131,34 +121,9 @@ export type TargetDuration = "30s" | "60s" | "2m" | "3m" | "5m";
 
 export type ContentType = "gaming" | "tutorial" | "podcast" | "general";
 
-export type TranscriptionEngine = "deepgram" | "local";
+export type TranscriptionEngine = "local" | "faster-whisper";
 
-export type LlmEngine = "local" | "lmstudio" | "openrouter";
-
-export type SummaryResult = {
-  outputPath: string;
-  clipCount: number;
-  duration: number;
-  filename: string;
-  aspectRatio: string;
-  narrativeTitle?: string;
-  storyline?: string;
-  youtubeChapters?: string;
-  thumbnailPath?: string;
-  thumbnailIdeas?: string[];
-  descriptionPath?: string;
-};
-
-export type AutoEditResult = {
-  videoPath: string;
-  chaptersPath: string;
-  chaptersText: string;
-  duration: number;
-  filename: string;
-  formatMode: "youtube" | "shorts";
-  aspectRatio: string;
-  outputDir: string;
-};
+export type LlmEngine = "local" | "ollama" | "lmstudio";
 
 export type HardwareTelemetry = {
   hasGpu: boolean;
@@ -172,33 +137,6 @@ export type HardwareTelemetry = {
   cpuUsagePercent: number;
 };
 
-export type AutoEditRecord = {
-  id: string;
-  projectId: string;
-  outputPath: string;
-  formatMode: "youtube" | "shorts";
-  targetDurationSec: number;
-  actualDurationSec?: number | null;
-  chaptersText?: string;
-  title?: string;
-  description?: string;
-  hashtags?: string;
-  createdAt: string;
-  filename?: string;
-  fileSizeMb?: number;
-  exists?: boolean;
-};
-
-export type AutoEditAssemblyStyle =
-  | "balanced"
-  | "smart_shuffle"
-  | "action"
-  | "humor"
-  | "chronological"
-  | "alternative";
-
-export type AutoEditAspectRatio = "original" | "9:16" | "16:9";
-
 export type LlmMemoryStatus = {
   isLoaded: boolean;
   loadedModel: string | null;
@@ -209,4 +147,3 @@ export type LlmMemoryStatus = {
   success?: boolean;
   error?: string | null;
 };
-

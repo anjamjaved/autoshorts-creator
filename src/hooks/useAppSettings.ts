@@ -21,40 +21,13 @@ export function useAppSettings() {
     return (localStorage.getItem("autoshorts_llm_engine") as LlmEngine) || "local";
   });
   const [localLlmModel, setLocalLlmModel] = useState(() => {
-    return localStorage.getItem("autoshorts_local_llm_model") || "llama3.2";
+    return localStorage.getItem("autoshorts_local_llm_model") || "qwen2.5:7b";
   });
   const [lmstudioModel, setLmstudioModel] = useState(() => {
     return localStorage.getItem("autoshorts_lmstudio_model") || "";
   });
   const [lmstudioBaseUrl, setLmstudioBaseUrl] = useState(() => {
     return localStorage.getItem("autoshorts_lmstudio_base_url") || "http://127.0.0.1:1234/v1";
-  });
-  const [deepgramKey, setDeepgramKey] = useState(() => {
-    return localStorage.getItem("autoshorts_deepgram_key") || "";
-  });
-  const [anthropicKey, setAnthropicKey] = useState(() => {
-    return localStorage.getItem("autoshorts_anthropic_key") || "";
-  });
-  const [deepseekKey, setDeepseekKey] = useState(() => {
-    return localStorage.getItem("autoshorts_deepseek_key") || "";
-  });
-  const [deepseekModel, setDeepseekModel] = useState(() => {
-    return localStorage.getItem("autoshorts_deepseek_model") || "";
-  });
-  const [geminiKey, setGeminiKey] = useState(() => {
-    return localStorage.getItem("autoshorts_gemini_key") || "";
-  });
-  const [openaiKey, setOpenaiKey] = useState(() => {
-    return localStorage.getItem("autoshorts_openai_key") || "";
-  });
-  const [openrouterKey, setOpenrouterKey] = useState(() => {
-    return localStorage.getItem("autoshorts_openrouter_key") || "";
-  });
-  const [groqKey, setGroqKey] = useState(() => {
-    return localStorage.getItem("autoshorts_groq_key") || "";
-  });
-  const [openrouterModel, setOpenrouterModel] = useState(() => {
-    return localStorage.getItem("autoshorts_openrouter_model") || "";
   });
 
   const [whisperModel, setWhisperModel] = useState<string>(() => {
@@ -88,28 +61,12 @@ export function useAppSettings() {
     void invoke("save_app_config", updates);
   }, []);
 
-  const canUseCloudKey = Boolean(environment?.hasDeepgramKey || deepgramKey.trim().length > 0);
-  const canUseClaude = Boolean(environment?.hasAnthropicKey || anthropicKey.trim().length > 0);
-  const canUseDeepseek = Boolean(environment?.hasDeepseekKey || deepseekKey.trim().length > 0);
-  const canUseGemini = Boolean(environment?.hasGeminiKey || geminiKey.trim().length > 0);
-  const canUseOpenai = Boolean(environment?.hasOpenaiKey || openaiKey.trim().length > 0);
-  const canUseOpenrouter = Boolean(environment?.hasOpenrouterKey || openrouterKey.trim().length > 0);
-  const canUseGroq = Boolean(environment?.hasGroqKey || groqKey.trim().length > 0);
   const canUseLmStudio = Boolean(environment?.hasLmStudio);
-
-  const canTranscribe =
-    transcriptionEngine === "local"
-      ? Boolean(environment?.hasLocalWhisperModel)
-      : canUseCloudKey;
-
+  const canTranscribe = Boolean(environment?.hasLocalWhisperModel);
   const canUseActiveLlm =
     llmEngine === "local"
       ? Boolean(environment?.hasOllama)
-      : llmEngine === "lmstudio"
-      ? canUseLmStudio
-      : llmEngine === "openrouter"
-      ? canUseOpenrouter
-      : false;
+      : canUseLmStudio;
 
   const pullModelDirectly = async (modelName: string) => {
     setDownloadingModelName(modelName);
@@ -148,55 +105,38 @@ export function useAppSettings() {
     }
   };
 
-  // Initial load
+  const refreshEnv = useCallback(async () => {
+    try {
+      const env = await invoke<EnvironmentStatus>("environment_status");
+      setEnvironment(env);
+      if (env.whisperModels) {
+        setWhisperModelsList(env.whisperModels);
+      }
+    } catch (err) {
+      console.error("Failed to load environment status", err);
+    }
+  }, []);
+
   useEffect(() => {
-    invoke<WhisperModel[]>("get_whisper_models")
-      .then((models) => {
-        if (Array.isArray(models) && models.length > 0) {
-          setWhisperModelsList(models);
-          const saved = localStorage.getItem("autoshorts_whisper_model");
-          if (!saved) {
-            const rec =
-              models.find((m) => m.downloaded && m.id === "large-v3-turbo") ||
-              models.find((m) => m.downloaded) ||
-              models[0];
-            if (rec) setWhisperModel(rec.id);
-          }
-        }
-      })
-      .catch(console.error);
+    void refreshEnv();
 
-    invoke<any>("get_default_moments_prompt")
-      .then((prompt) => {
-        if (typeof prompt === "string") {
-          setDefaultMomentsPrompt(prompt);
-        } else if (prompt && typeof prompt === "object" && typeof prompt.defaultPrompt === "string") {
-          setDefaultMomentsPrompt(prompt.defaultPrompt);
-        }
+    invoke<string>("get_default_moments_prompt")
+      .then((p) => {
+        if (p) setDefaultMomentsPrompt(p);
       })
-      .catch(console.error);
+      .catch(() => {});
 
-    invoke<any>("get_app_config")
+    invoke<Record<string, any>>("get_app_config")
       .then((cfg) => {
-        const localOnboarded = localStorage.getItem("autoshorts_onboarded");
-        if (cfg?.onboarded || localOnboarded === "true") {
-          setIsOnboarded(true);
-          if (cfg?.transcriptionEngine) setTranscriptionEngine(cfg.transcriptionEngine);
-          if (cfg?.whisperModel) setWhisperModel(cfg.whisperModel);
-          if (cfg?.customMomentsPrompt !== undefined) setCustomMomentsPrompt(cfg.customMomentsPrompt);
-          if (cfg?.llmEngine) setLlmEngine(cfg.llmEngine);
-          if (cfg?.localLlmModel) setLocalLlmModel(cfg.localLlmModel);
-          if (cfg?.lmstudioModel) setLmstudioModel(cfg.lmstudioModel);
-          if (cfg?.lmstudioBaseUrl) setLmstudioBaseUrl(cfg.lmstudioBaseUrl);
-          if (cfg?.deepseekKey) setDeepseekKey(cfg.deepseekKey);
-          if (cfg?.deepseekModel) setDeepseekModel(cfg.deepseekModel);
-          if (cfg?.anthropicKey) setAnthropicKey(cfg.anthropicKey);
-          if (cfg?.openrouterKey) setOpenrouterKey(cfg.openrouterKey);
-          if (cfg?.openrouterModel) setOpenrouterModel(cfg.openrouterModel);
-          if (cfg?.deepgramKey) setDeepgramKey(cfg.deepgramKey);
-          if (cfg?.openaiKey) setOpenaiKey(cfg.openaiKey);
-          if (cfg?.groqKey) setGroqKey(cfg.groqKey);
-          if (cfg?.geminiKey) setGeminiKey(cfg.geminiKey);
+        if (!cfg) return;
+        if (cfg.whisperModel) setWhisperModel(cfg.whisperModel);
+        if (cfg.llmEngine) setLlmEngine(cfg.llmEngine);
+        if (cfg.localLlmModel) setLocalLlmModel(cfg.localLlmModel);
+        if (cfg.lmstudioModel) setLmstudioModel(cfg.lmstudioModel);
+        if (cfg.lmstudioBaseUrl) setLmstudioBaseUrl(cfg.lmstudioBaseUrl);
+        if (cfg.customMomentsPrompt) setCustomMomentsPrompt(cfg.customMomentsPrompt);
+        if (cfg.onboarded !== undefined) {
+          setIsOnboarded(Boolean(cfg.onboarded));
         } else {
           setIsOnboarded(false);
         }
@@ -219,7 +159,7 @@ export function useAppSettings() {
     return () => {
       clearInterval(intervalTelemetry);
     };
-  }, []);
+  }, [refreshEnv]);
 
   const fetchLlmMemoryStatus = useCallback(() => {
     invoke<LlmMemoryStatus>("get_llm_memory_status", {
@@ -295,7 +235,6 @@ export function useAppSettings() {
     }
   }, [llmEngine, lmstudioBaseUrl]);
 
-  // Sync state to localStorage & backend
   useEffect(() => {
     localStorage.setItem("autoshorts_whisper_model", whisperModel);
     syncConfig({ whisperModel });
@@ -355,51 +294,6 @@ export function useAppSettings() {
   }, [environment?.installedOllamaModels, localLlmModel, syncConfig]);
 
   useEffect(() => {
-    localStorage.setItem("autoshorts_deepgram_key", deepgramKey);
-    syncConfig({ deepgramKey });
-  }, [deepgramKey, syncConfig]);
-
-  useEffect(() => {
-    localStorage.setItem("autoshorts_anthropic_key", anthropicKey);
-    syncConfig({ anthropicKey });
-  }, [anthropicKey, syncConfig]);
-
-  useEffect(() => {
-    localStorage.setItem("autoshorts_deepseek_key", deepseekKey);
-    syncConfig({ deepseekKey });
-  }, [deepseekKey, syncConfig]);
-
-  useEffect(() => {
-    localStorage.setItem("autoshorts_deepseek_model", deepseekModel);
-    syncConfig({ deepseekModel });
-  }, [deepseekModel, syncConfig]);
-
-  useEffect(() => {
-    localStorage.setItem("autoshorts_gemini_key", geminiKey);
-    syncConfig({ geminiKey });
-  }, [geminiKey, syncConfig]);
-
-  useEffect(() => {
-    localStorage.setItem("autoshorts_openai_key", openaiKey);
-    syncConfig({ openaiKey });
-  }, [openaiKey, syncConfig]);
-
-  useEffect(() => {
-    localStorage.setItem("autoshorts_openrouter_key", openrouterKey);
-    syncConfig({ openrouterKey });
-  }, [openrouterKey, syncConfig]);
-
-  useEffect(() => {
-    localStorage.setItem("autoshorts_groq_key", groqKey);
-    syncConfig({ groqKey });
-  }, [groqKey, syncConfig]);
-
-  useEffect(() => {
-    localStorage.setItem("autoshorts_openrouter_model", openrouterModel);
-    syncConfig({ openrouterModel });
-  }, [openrouterModel, syncConfig]);
-
-  useEffect(() => {
     localStorage.setItem("autoshorts_output_dir", customOutputDir);
   }, [customOutputDir]);
 
@@ -424,24 +318,6 @@ export function useAppSettings() {
     setLmstudioModel,
     lmstudioBaseUrl,
     setLmstudioBaseUrl,
-    deepgramKey,
-    setDeepgramKey,
-    anthropicKey,
-    setAnthropicKey,
-    deepseekKey,
-    setDeepseekKey,
-    deepseekModel,
-    setDeepseekModel,
-    geminiKey,
-    setGeminiKey,
-    openaiKey,
-    setOpenaiKey,
-    openrouterKey,
-    setOpenrouterKey,
-    groqKey,
-    setGroqKey,
-    openrouterModel,
-    setOpenrouterModel,
     whisperModel,
     setWhisperModel,
     whisperModelsList,
@@ -459,13 +335,6 @@ export function useAppSettings() {
     modelDownloadProgress,
     pullModelDirectly,
     syncConfig,
-    canUseCloudKey,
-    canUseClaude,
-    canUseDeepseek,
-    canUseGemini,
-    canUseOpenai,
-    canUseOpenrouter,
-    canUseGroq,
     canUseLmStudio,
     canTranscribe,
     canUseActiveLlm,

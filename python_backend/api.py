@@ -21,32 +21,21 @@ from .media import (
     build_drawtext_filters,
     probe_media,
     render_flat_clip,
-    render_compilation_video,
-    render_autoedit_video,
     inject_acoustic_cues_into_transcript,
 )
-from .transcription import transcribe_local, transcribe_deepgram, whisper_available, get_installed_whisper_models
+from .transcription import transcribe_local, whisper_available, get_installed_whisper_models
 from .llm import (
     detect_candidates_pipeline,
     unload_all_ollama_models,
     unload_all_lmstudio_models,
     get_loaded_models_status,
     preload_local_model,
-    plan_summary_narrative,
-    plan_autoedit_narrative,
     refine_transcript_with_llm,
     DEFAULT_MOMENTS_PROMPT,
     generate_social_copy_with_llm
 )
 from .telemetry import get_hardware_telemetry
-from .services.youtube_service import check_youtube_copyright, download_youtube_video
 from .services.project_service import resolve_project_dir, open_media_file, open_folder, move_project_folder_action
-from .services.autoedit_service import (
-    list_project_autoedits,
-    delete_project_autoedit,
-    generate_autoedit_copy_action,
-    execute_autoedit_assembly
-)
 
 
 def rebuild_words_from_segments(segments: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -99,7 +88,6 @@ class Api:
         self._window = None
         self._cancel_candidates_flag = False
         self._cancel_transcription_flag = False
-        self._cancel_autoedit_flag = False
 
     def get_project_dir(self, project: Dict[str, Any]) -> Path:
         return resolve_project_dir(self.db, project)
@@ -220,25 +208,15 @@ class Api:
         except Exception:
             pass
 
-        has_ytdlp = False
-        try:
-            import yt_dlp
-            has_ytdlp = True
-        except ImportError:
-            has_ytdlp = command_exists("yt-dlp")
-
         return {
             "dataDir": str(self.data_dir),
             "hasFfmpeg": command_exists("ffmpeg"),
             "hasFfprobe": command_exists("ffprobe"),
-            "hasDeepgramKey": bool(os.getenv("DEEPGRAM_API_KEY")),
-            "hasOpenrouterKey": bool(os.getenv("OPENROUTER_API_KEY")),
             "llmProvider": os.getenv("LLM_PROVIDER", "local"),
             "hasLocalWhisperModel": whisper_available(),
             "whisperModels": get_installed_whisper_models(),
             "hasOllama": has_ollama,
             "hasLmStudio": has_lmstudio,
-            "hasYtdlp": has_ytdlp,
             "installedOllamaModels": installed_models,
             "installedLmStudioModels": installed_lmstudio_models
         }
@@ -388,20 +366,13 @@ class Api:
                 msg = f"Transcribiendo con Whisper ({pct}%)"
                 self.emit("transcription-progress", {"percentage": pct, "message": msg})
 
-            if provider == "deepgram":
-                key = api_key or os.getenv("DEEPGRAM_API_KEY")
-                if not key:
-                    raise ValueError("Deepgram API Key is required")
-                self.emit("transcription-progress", {"percentage": 0, "message": "Transcribiendo con Deepgram..."})
-                transcript = transcribe_deepgram(str(audio_path), key)
-            else:
-                self.emit("transcription-progress", {"percentage": 0, "message": f"Cargando modelo Whisper '{whisper_model}'..."})
-                transcript = transcribe_local(
-                    str(audio_path),
-                    model_name=whisper_model,
-                    progress_callback=on_whisper_progress,
-                    is_cancelled=lambda: self._cancel_transcription_flag
-                )
+            self.emit("transcription-progress", {"percentage": 0, "message": f"Cargando faster-whisper '{whisper_model}'..."})
+            transcript = transcribe_local(
+                str(audio_path),
+                model_name=whisper_model,
+                progress_callback=on_whisper_progress,
+                is_cancelled=lambda: self._cancel_transcription_flag
+            )
 
             if self._cancel_transcription_flag:
                 self.db.update_project_status(project_id, "created")
@@ -1098,223 +1069,6 @@ class Api:
         )
         return str(rendered_path)
 
-    def render_auto_summary(self, args: Any) -> Dict[str, Any]:
-        project_id = args.get("projectId")
-        target_minutes = float(args.get("targetDurationMinutes", 8.0))
-        target_seconds = target_minutes * 60.0
-        aspect_ratio = args.get("aspectRatio", "original")
-        custom_dir = args.get("outputDir")
-        specific_candidate_ids = args.get("candidateIds")
-
-        project = self.db.get_project(project_id)
-        all_candidates = self.db.get_candidates(project_id)
-        if not all_candidates:
-            raise ValueError("El proyecto no tiene momentos candidatos detectados para compilar un resumen.")
-
-        # Read active LLM config for narrative sequencing
-        app_cfg = self.get_app_config()
-        llm_engine = app_cfg.get("llmEngine", "local")
-        model_name = (
-            app_cfg.get("localLlmModel") if llm_engine == "local" else (
-                app_cfg.get("lmstudioModel") if llm_engine == "lmstudio" else (
-                    app_cfg.get("openrouterModel") if llm_engine == "openrouter" else None
-                )
-            )
-        )
-        api_key = app_cfg.get("openrouterKey") if llm_engine == "openrouter" else None
-
-        summary_vibe = args.get("summaryVibe", "balanced")
-        narrative_title = "Resumen del Stream"
-        storyline = "Secuencia cronológica optimizada"
-        thumbnail_ideas = ["¡MOMENTOS ÉPICOS!", "NO TE LO PIERDAS", "FINAL DEL STREAM"]
-
-        # If specific candidate IDs are provided, use them; otherwise consult the AI for the narrative order!
-        if specific_candidate_ids and isinstance(specific_candidate_ids, list) and len(specific_candidate_ids) > 0:
-            candidate_map = {c["id"]: c for c in all_candidates}
-            selected_candidates = [candidate_map[cid] for cid in specific_candidate_ids if cid in candidate_map]
-        else:
-            self.emit("summary-progress", {
-                "status": "planning",
-                "message": f"Consultando a la IA el mejor orden narrativo (estilo: {summary_vibe})...",
-                "percentage": 5
-            })
-
-            plan = plan_summary_narrative(
-                candidates=all_candidates,
-                target_duration_minutes=target_minutes,
-                provider=llm_engine,
-                model_name=model_name,
-                api_key=api_key,
-                summary_vibe=summary_vibe
-            )
-            narrative_title = plan.get("narrative_title", narrative_title)
-            storyline = plan.get("storyline", storyline)
-            thumbnail_ideas = plan.get("thumbnail_ideas", thumbnail_ideas)
-            ordered_ids = plan.get("ordered_clip_ids", [])
-
-            candidate_map = {c["id"]: c for c in all_candidates}
-            
-            # Follow the AI's narrative order while strictly respecting the target duration budget!
-            chosen = []
-            accumulated_dur = 0.0
-            source_ids = ordered_ids if ordered_ids else [c["id"] for c in sorted(all_candidates, key=lambda c: c["score"], reverse=True)]
-
-            for cid in source_ids:
-                if cid not in candidate_map:
-                    continue
-                c = candidate_map[cid]
-                dur = max(1.0, float(c["endSec"]) - float(c["startSec"]))
-
-                # Always keep at least 2 clips (hook + context)
-                if len(chosen) < 2:
-                    chosen.append(c)
-                    accumulated_dur += dur
-                    continue
-
-                # If adding this clip exceeds target + 30s buffer, stop if we already have sufficient duration
-                if (accumulated_dur + dur) > (target_seconds + 30.0):
-                    if accumulated_dur >= (target_seconds * 0.80):
-                        break
-
-                chosen.append(c)
-                accumulated_dur += dur
-
-                # Once target duration is reached or slightly passed with complete clips, stop
-                if accumulated_dur >= target_seconds:
-                    break
-
-            selected_candidates = chosen if chosen else [all_candidates[0]]
-
-        if not selected_candidates:
-            raise ValueError("No se pudieron seleccionar fragmentos para el video resumen.")
-
-        segments = [
-            {"start": c["startSec"], "end": c["endSec"]}
-            for c in selected_candidates
-        ]
-        total_duration = sum(s["end"] - s["start"] for s in segments)
-
-        proj_name = project.get("name") or Path(project["sourcePath"]).stem or project["id"]
-        if custom_dir:
-            out_dir = Path(custom_dir)
-        else:
-            proj_dir = self.get_project_dir(project)
-            out_dir = proj_dir / "summary"
-        os.makedirs(out_dir, exist_ok=True)
-
-        ratio_tag = "16x9" if aspect_ratio == "original" else "9x16"
-        mins_tag = f"{int(round(target_minutes))}min"
-        clean_name = re.sub(r'[\U00010000-\U0010ffff\u2600-\u27bf\ufe00-\ufe0f\u200d\u2300-\u23ff\u2b50-\u2b55]', '', proj_name)
-        clean_name = re.sub(r'[\\/*?:"<>|#]', "", clean_name).strip()[:40]
-        output_filename = f"Resumen Stream - {clean_name} - {mins_tag} - {ratio_tag}.mp4"
-        output_path = out_dir / output_filename
-
-        def on_render_progress(current_idx: int, total_segs: int, msg: str):
-            pct = 10 + int((current_idx / max(1, total_segs)) * 85)
-            self.emit("summary-progress", {
-                "status": "rendering",
-                "message": msg,
-                "percentage": min(95, pct)
-            })
-
-        rendered_path = render_compilation_video(
-            source_path=project["sourcePath"],
-            segments=segments,
-            output_path=output_path,
-            aspect_ratio=aspect_ratio,
-            progress_callback=on_render_progress
-        )
-
-        # 1. Build YouTube chapters string
-        timestamps = []
-        current_time = 0.0
-        for idx, c in enumerate(selected_candidates):
-            mins = int(current_time // 60)
-            secs = int(current_time % 60)
-            hook_clean = re.sub(r'[\U00010000-\U0010ffff\u2600-\u27bf\ufe00-\ufe0f\u200d\u2300-\u23ff\u2b50-\u2b55]', '', c.get("hook", f"Momento {idx+1}")).strip()
-            timestamps.append(f"{mins}:{secs:02d} {hook_clean}")
-            current_time += (float(c["endSec"]) - float(c["startSec"]))
-
-        youtube_chapters = "\n".join(timestamps)
-
-        # 2. Extract 1080p thumbnail image from best candidate
-        thumbnail_filename = f"Resumen Stream - {clean_name} - {mins_tag} - Miniatura.jpg"
-        thumbnail_path = out_dir / thumbnail_filename
-        best_cand = max(selected_candidates, key=lambda c: c.get("score", 0))
-        thumb_time = float(best_cand["startSec"]) + min(5.0, max(0.5, (float(best_cand["endSec"]) - float(best_cand["startSec"])) / 3.0))
-        thumb_str = None
-        try:
-            extract_video_thumbnail(project["sourcePath"], thumb_time, thumbnail_path)
-            thumb_str = str(thumbnail_path)
-        except Exception as e:
-            print(f"Nota extrayendo miniatura: {e}")
-
-        # 3. Save companion YouTube description file
-        desc_filename = f"Resumen Stream - {clean_name} - {mins_tag} - Descripcion_YouTube.txt"
-        desc_path = out_dir / desc_filename
-        try:
-            with open(desc_path, "w", encoding="utf-8") as f:
-                f.write(f"TITULO RECOMENDADO:\n{narrative_title}\n\n")
-                f.write(f"RESUMEN Y GUION:\n{storyline}\n\n")
-                if thumbnail_ideas:
-                    f.write("IDEAS PARA EL TEXTO DE LA MINIATURA:\n" + "\n".join(f"- {t}" for t in thumbnail_ideas) + "\n\n")
-                f.write(f"CAPITULOS Y TIMESTAMPS PARA YOUTUBE:\n{youtube_chapters}\n")
-        except Exception as e:
-            print(f"Nota guardando descripcion de YouTube: {e}")
-
-        self.emit("summary-progress", {
-            "status": "done",
-            "message": "Video resumen generado exitosamente.",
-            "percentage": 100
-        })
-
-        return {
-            "outputPath": str(rendered_path),
-            "clipCount": len(segments),
-            "duration": round(total_duration, 1),
-            "filename": output_filename,
-            "aspectRatio": aspect_ratio,
-            "narrativeTitle": narrative_title,
-            "storyline": storyline,
-            "youtubeChapters": youtube_chapters,
-            "thumbnailPath": thumb_str,
-            "thumbnailIdeas": thumbnail_ideas,
-            "descriptionPath": str(desc_path)
-        }
-
-    def cancel_auto_edit(self, _args: Any = None) -> bool:
-        self._cancel_autoedit_flag = True
-        try:
-            unload_all_ollama_models()
-        except Exception:
-            pass
-        try:
-            unload_all_lmstudio_models()
-        except Exception:
-            pass
-        return True
-
-    def render_auto_edit(self, args: Any) -> Dict[str, Any]:
-        self._cancel_autoedit_flag = False
-        return execute_autoedit_assembly(
-            db=self.db,
-            args=args,
-            get_project_dir_fn=self.get_project_dir,
-            emit_fn=self.emit,
-            is_cancelled_fn=lambda: getattr(self, "_cancel_autoedit_flag", False),
-            get_app_config_fn=self.get_app_config,
-        )
-
-    def get_autoedits(self, args: Any) -> List[Dict[str, Any]]:
-        project_id = args.get("projectId") if isinstance(args, dict) else args
-        return list_project_autoedits(self.db, project_id, self.get_project_dir)
-
-    def delete_autoedit(self, args: Any) -> Dict[str, Any]:
-        return delete_project_autoedit(self.db, args if isinstance(args, dict) else {"autoeditId": args})
-
-    def generate_autoedit_social_copy(self, args: Any) -> Dict[str, Any]:
-        return generate_autoedit_copy_action(self.db, args if isinstance(args, dict) else {"autoeditId": args}, self.get_app_config)
-
     def update_candidate_trim(self, args: Any) -> Dict[str, Any]:
         candidate_id = args.get("candidateId")
         start_sec = float(args.get("startSec", 0.0))
@@ -1373,14 +1127,6 @@ class Api:
             raw_json = json.dumps(data, ensure_ascii=False, indent=2)
             self.db.save_transcript(project_id, record["engine"], raw_json, record["language"])
         return {"success": True}
-
-    def check_youtube_copyright(self, args: Any) -> Dict[str, Any]:
-        url = args.get("url") if isinstance(args, dict) else args
-        return check_youtube_copyright(url)
-
-    def download_youtube_video(self, args: Any) -> str:
-        url = args.get("url") if isinstance(args, dict) else args
-        return download_youtube_video(url)
 
     def pull_ollama_model(self, args: Any):
         model_name = args.get("modelName") if isinstance(args, dict) else args

@@ -135,9 +135,7 @@ export function TranscriptPanel({
 
       {!canTranscribe && (
         <div className="api-warning">
-          {transcriptionEngine === "local"
-            ? `Local Whisper (Python package 'openai-whisper') no está instalado o faltan modelos. Ejecuta 'pip3 install openai-whisper'.`
-            : "Falta la API Key de Deepgram. La transcripción no funcionará hasta configurarla en Ajustes."}
+          El modelo local de Faster-Whisper no está disponible en tu entorno.
         </div>
       )}
 

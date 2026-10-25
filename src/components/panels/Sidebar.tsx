@@ -7,7 +7,6 @@ import {
   FileVideo,
   Loader2,
   SlidersHorizontal,
-  Youtube,
 } from "lucide-react";
 import { BusyState, Project } from "../../types";
 import { fileName } from "../../utils/format";
@@ -17,9 +16,7 @@ interface SidebarProps {
   activeProjectId: string | null;
   onSelectProject: (id: string | null) => void;
   onImportMedia: () => Promise<void>;
-  onOpenYoutubeModal: () => void;
   busy: BusyState;
-  hasYtdlp: boolean;
   showSettings: boolean;
   onToggleSettings: () => void;
 }
@@ -29,9 +26,7 @@ export function Sidebar({
   activeProjectId,
   onSelectProject,
   onImportMedia,
-  onOpenYoutubeModal,
   busy,
-  hasYtdlp,
   showSettings,
   onToggleSettings,
 }: SidebarProps) {
@@ -52,18 +47,6 @@ export function Sidebar({
       >
         {busy === "import" ? <Loader2 className="spin" size={16} /> : <FileVideo size={16} />}
         <span>Importar Grabación</span>
-      </button>
-
-      <button
-        type="button"
-        className="secondary-action"
-        onClick={onOpenYoutubeModal}
-        disabled={busy !== "idle" || !hasYtdlp}
-        title={!hasYtdlp ? "Instala yt-dlp para habilitar esta función" : "Descargar video desde YouTube"}
-        style={{ marginTop: "4px" }}
-      >
-        <Youtube size={16} />
-        <span>Importar de YouTube</span>
       </button>
 
       <section className="project-list" aria-label="Projects">
@@ -116,7 +99,7 @@ export function Sidebar({
           type="button"
           className={`project-row ${showSettings ? "active" : ""}`}
           onClick={onToggleSettings}
-          title="Configuración de Modelos e IA"
+          title="Configuración de Modelos Locales"
           style={{
             width: "100%",
             textAlign: "left",
@@ -125,7 +108,7 @@ export function Sidebar({
           }}
         >
           <SlidersHorizontal size={16} />
-          <span>Configuración & APIs</span>
+          <span>Configuración</span>
         </button>
       </div>
     </aside>

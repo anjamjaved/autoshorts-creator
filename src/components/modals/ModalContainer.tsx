@@ -1,5 +1,4 @@
 import React from "react";
-import { invoke } from "../../apiBridge";
 import type {
   BusyState,
   Candidate,
@@ -9,10 +8,6 @@ import type {
   HardwareTelemetry,
   LlmEngine,
   ProjectDetail,
-  SummaryResult,
-  AutoEditResult,
-  AutoEditAssemblyStyle,
-  AutoEditAspectRatio,
   TargetDuration,
   TranscriptionEngine,
   WhisperModel,
@@ -23,9 +18,6 @@ import { StyleModal } from "./StyleModal";
 import { SocialCopyModal } from "./SocialCopyModal";
 import { QuickCopyModal } from "./QuickCopyModal";
 import { CandidatePreviewModal } from "./CandidatePreviewModal";
-import { YouTubeImportModal } from "./YouTubeImportModal";
-import { SummaryModal } from "./SummaryModal";
-import { AutoEditModal } from "./AutoEditModal";
 import { ModelDownloadModal } from "./ModelDownloadModal";
 
 export interface ModalContainerProps {
@@ -56,24 +48,6 @@ export interface ModalContainerProps {
   modelDownloadStatus: string;
   modelDownloadProgress: number;
   onPullModel: (model: string) => Promise<void>;
-  openrouterKey: string;
-  setOpenrouterKey: (val: string) => void;
-  openrouterModel: string;
-  setOpenrouterModel: (val: string) => void;
-  deepseekKey: string;
-  setDeepseekKey: (val: string) => void;
-  deepseekModel: string;
-  setDeepseekModel: (val: string) => void;
-  anthropicKey: string;
-  setAnthropicKey: (val: string) => void;
-  openaiKey: string;
-  setOpenaiKey: (val: string) => void;
-  groqKey: string;
-  setGroqKey: (val: string) => void;
-  geminiKey: string;
-  setGeminiKey: (val: string) => void;
-  deepgramKey: string;
-  setDeepgramKey: (val: string) => void;
   customMomentsPrompt: string;
   setCustomMomentsPrompt: (val: string) => void;
   defaultMomentsPrompt: string;
@@ -82,18 +56,10 @@ export interface ModalContainerProps {
 
   // Capabilities
   canUseLmStudio: boolean;
-  canUseDeepseek: boolean;
-  canUseClaude: boolean;
-  canUseOpenai: boolean;
-  canUseGroq: boolean;
-  canUseGemini: boolean;
-  canUseOpenrouter: boolean;
 
   // Import / Style Modal
   showStyleModal: boolean;
   setShowStyleModal: (show: boolean) => void;
-  workflowGoal?: "clips" | "autoedit";
-  setWorkflowGoal?: (goal: "clips" | "autoedit") => void;
   setMediaPathToImport: (path: string | null) => void;
   selectedStyle: string;
   setSelectedStyle: (style: string) => void;
@@ -143,57 +109,6 @@ export interface ModalContainerProps {
   onCutCandidate: (candidateId: string, options?: any) => Promise<void>;
   clipByCandidate: Map<string, any>;
   busy: BusyState;
-
-  // YouTube Modal
-  youtubeModalOpen: boolean;
-  setYoutubeModalOpen: (val: boolean) => void;
-  youtubeUrl: string;
-  setYoutubeUrl: (val: string) => void;
-  youtubeStatus: "idle" | "checking" | "warning" | "downloading";
-  youtubeWarningLicense: string | null;
-  onCheckAndDownloadYoutube: () => Promise<void>;
-  onConfirmDownloadYoutubeRisk: () => Promise<void>;
-
-  // Summary Modal
-  showSummaryModal: boolean;
-  setShowSummaryModal: (val: boolean) => void;
-  summaryTargetMinutes: number;
-  setSummaryTargetMinutes: (val: number) => void;
-  summaryAspectRatio: "original" | "9:16";
-  setSummaryAspectRatio: (val: "original" | "9:16") => void;
-  summaryVibe: "balanced" | "tryhard" | "funny";
-  setSummaryVibe: (val: "balanced" | "tryhard" | "funny") => void;
-  summaryStatus: "idle" | "rendering" | "done";
-  setSummaryStatus: (val: "idle" | "rendering" | "done") => void;
-  summaryProgressMsg: string;
-  summaryResult: SummaryResult | null;
-  setSummaryResult: (res: SummaryResult | null) => void;
-  customOutputDir: string;
-  onGenerateSummary: () => Promise<void>;
-  copiedChapters: boolean;
-  setCopiedChapters: (val: boolean) => void;
-
-  // AutoEdit Modal
-  showAutoEditModal: boolean;
-  setShowAutoEditModal: (val: boolean) => void;
-  autoEditFormatMode: "youtube" | "shorts";
-  setAutoEditFormatMode: (mode: "youtube" | "shorts") => void;
-  autoEditTargetMinutes: number;
-  setAutoEditTargetMinutes: (val: number) => void;
-  autoEditAspectRatio: AutoEditAspectRatio;
-  setAutoEditAspectRatio: (val: AutoEditAspectRatio) => void;
-  autoEditAssemblyStyle: AutoEditAssemblyStyle;
-  setAutoEditAssemblyStyle: (val: AutoEditAssemblyStyle) => void;
-  autoEditIncludeTeaser: boolean;
-  setAutoEditIncludeTeaser: (val: boolean) => void;
-  autoEditTrimSilences: boolean;
-  setAutoEditTrimSilences: (val: boolean) => void;
-  autoEditStatus: "idle" | "rendering" | "done";
-  autoEditProgressMsg: string;
-  autoEditProgressPct: number;
-  autoEditResult: AutoEditResult | null;
-  onStartAutoEdit: () => Promise<void>;
-  onCancelAutoEdit: () => Promise<void>;
 }
 
 export function ModalContainer(props: ModalContainerProps) {
@@ -226,24 +141,6 @@ export function ModalContainer(props: ModalContainerProps) {
         modelDownloadStatus={props.modelDownloadStatus}
         modelDownloadProgress={props.modelDownloadProgress}
         onPullModel={props.onPullModel}
-        openrouterKey={props.openrouterKey}
-        setOpenrouterKey={props.setOpenrouterKey}
-        openrouterModel={props.openrouterModel}
-        setOpenrouterModel={props.setOpenrouterModel}
-        deepseekKey={props.deepseekKey}
-        setDeepseekKey={props.setDeepseekKey}
-        deepseekModel={props.deepseekModel}
-        setDeepseekModel={props.setDeepseekModel}
-        anthropicKey={props.anthropicKey}
-        setAnthropicKey={props.setAnthropicKey}
-        openaiKey={props.openaiKey}
-        setOpenaiKey={props.setOpenaiKey}
-        groqKey={props.groqKey}
-        setGroqKey={props.setGroqKey}
-        geminiKey={props.geminiKey}
-        setGeminiKey={props.setGeminiKey}
-        deepgramKey={props.deepgramKey}
-        setDeepgramKey={props.setDeepgramKey}
         customMomentsPrompt={props.customMomentsPrompt}
         setCustomMomentsPrompt={props.setCustomMomentsPrompt}
         defaultMomentsPrompt={props.defaultMomentsPrompt}
@@ -258,8 +155,6 @@ export function ModalContainer(props: ModalContainerProps) {
           props.setMediaPathToImport(null);
         }}
         telemetry={props.telemetry}
-        workflowGoal={props.workflowGoal}
-        setWorkflowGoal={props.setWorkflowGoal}
         selectedStyle={props.selectedStyle}
         setSelectedStyle={props.setSelectedStyle}
         selectedContentType={props.selectedContentType}
@@ -275,16 +170,6 @@ export function ModalContainer(props: ModalContainerProps) {
         lmstudioModel={props.lmstudioModel}
         setLmstudioModel={props.setLmstudioModel}
         canUseLmStudio={props.canUseLmStudio}
-        deepseekModel={props.deepseekModel}
-        setDeepseekModel={props.setDeepseekModel}
-        openrouterModel={props.openrouterModel}
-        setOpenrouterModel={props.setOpenrouterModel}
-        canUseDeepseek={props.canUseDeepseek}
-        canUseClaude={props.canUseClaude}
-        canUseOpenai={props.canUseOpenai}
-        canUseGroq={props.canUseGroq}
-        canUseGemini={props.canUseGemini}
-        canUseOpenrouter={props.canUseOpenrouter}
         transcriptionEngine={props.transcriptionEngine}
         whisperModel={props.whisperModel}
         setWhisperModel={props.setWhisperModel}
@@ -329,8 +214,6 @@ export function ModalContainer(props: ModalContainerProps) {
         llmEngine={props.llmEngine}
         localLlmModel={props.localLlmModel}
         lmstudioModel={props.lmstudioModel}
-        openrouterKey={props.openrouterKey}
-        openrouterModel={props.openrouterModel}
         enableThinking={props.enableThinking}
       />
 
@@ -354,81 +237,6 @@ export function ModalContainer(props: ModalContainerProps) {
         modelDownloadProgress={props.modelDownloadProgress}
         modelDownloadStatus={props.modelDownloadStatus}
       />
-
-      <YouTubeImportModal
-        isOpen={props.youtubeModalOpen}
-        onClose={() => {
-          props.setYoutubeModalOpen(false);
-          props.setYoutubeUrl("");
-        }}
-        youtubeUrl={props.youtubeUrl}
-        setYoutubeUrl={props.setYoutubeUrl}
-        youtubeStatus={props.youtubeStatus}
-        youtubeWarningLicense={props.youtubeWarningLicense}
-        onCheckAndDownload={props.onCheckAndDownloadYoutube}
-        onConfirmDownloadRisk={props.onConfirmDownloadYoutubeRisk}
-      />
-
-      {props.showSummaryModal && props.detail && (
-        <SummaryModal
-          isOpen={props.showSummaryModal}
-          onClose={() => {
-            if (props.summaryStatus !== "rendering") {
-              props.setShowSummaryModal(false);
-              props.setSummaryStatus("idle");
-            }
-          }}
-          detail={props.detail}
-          summaryTargetMinutes={props.summaryTargetMinutes}
-          setSummaryTargetMinutes={props.setSummaryTargetMinutes}
-          summaryAspectRatio={props.summaryAspectRatio}
-          setSummaryAspectRatio={props.setSummaryAspectRatio}
-          summaryVibe={props.summaryVibe}
-          setSummaryVibe={props.setSummaryVibe}
-          summaryStatus={props.summaryStatus}
-          setSummaryStatus={props.setSummaryStatus}
-          summaryProgressMsg={props.summaryProgressMsg}
-          summaryResult={props.summaryResult}
-          setSummaryResult={props.setSummaryResult}
-          customOutputDir={props.customOutputDir}
-          onGenerateSummary={props.onGenerateSummary}
-          copiedChapters={props.copiedChapters}
-          setCopiedChapters={props.setCopiedChapters}
-        />
-      )}
-
-      {props.showAutoEditModal && props.detail && (
-        <AutoEditModal
-          isOpen={props.showAutoEditModal}
-          onClose={() => {
-            if (props.autoEditStatus !== "rendering") {
-              props.setShowAutoEditModal(false);
-            }
-          }}
-          project={props.detail.project}
-          candidateCount={props.detail.candidates.length}
-          formatMode={props.autoEditFormatMode}
-          setFormatMode={props.setAutoEditFormatMode}
-          targetMinutes={props.autoEditTargetMinutes}
-          setTargetMinutes={props.setAutoEditTargetMinutes}
-          aspectRatio={props.autoEditAspectRatio}
-          setAspectRatio={props.setAutoEditAspectRatio}
-          assemblyStyle={props.autoEditAssemblyStyle}
-          setAssemblyStyle={props.setAutoEditAssemblyStyle}
-          includeTeaser={props.autoEditIncludeTeaser}
-          setIncludeTeaser={props.setAutoEditIncludeTeaser}
-          trimSilences={props.autoEditTrimSilences}
-          setTrimSilences={props.setAutoEditTrimSilences}
-          status={props.autoEditStatus}
-          progressMsg={props.autoEditProgressMsg}
-          progressPct={props.autoEditProgressPct}
-          result={props.autoEditResult}
-          onStartAutoEdit={props.onStartAutoEdit}
-          onCancelAutoEdit={props.onCancelAutoEdit}
-          onOpenFolder={(dir) => void invoke("open_folder", { path: dir })}
-          onOpenFile={(filePath) => void invoke("open_media_file", { path: filePath })}
-        />
-      )}
     </>
   );
 }

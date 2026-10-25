@@ -5,8 +5,6 @@ import type { EnvironmentStatus, HardwareTelemetry, LlmMemoryStatus } from "../.
 interface StatusBarProps {
   environment: EnvironmentStatus | null;
   telemetry: HardwareTelemetry | null;
-  canUseCloudKey: boolean;
-  canUseOpenrouter?: boolean;
   llmMemoryStatus?: LlmMemoryStatus | null;
   onUnloadLlm?: () => void;
 }
@@ -14,8 +12,6 @@ interface StatusBarProps {
 export const StatusBar: React.FC<StatusBarProps> = ({
   environment,
   telemetry,
-  canUseCloudKey,
-  canUseOpenrouter = false,
   llmMemoryStatus,
   onUnloadLlm,
 }) => {
@@ -100,23 +96,14 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <span className={`indicator ${environment?.hasFfprobe ? "active" : ""}`} title="FFprobe status">
             ffprobe
           </span>
-          <span className={`indicator ${environment?.hasYtdlp ? "active" : ""}`} title="yt-dlp status">
-            yt-dlp
-          </span>
-          <span className={`indicator ${environment?.hasLocalWhisperModel ? "active" : ""}`} title="Whisper Model status">
-            Whisper Model
+          <span className={`indicator ${environment?.hasLocalWhisperModel ? "active" : ""}`} title="Faster-Whisper status">
+            Faster-Whisper
           </span>
           <span className={`indicator ${environment?.hasOllama ? "active" : ""}`} title="Ollama status">
             Ollama
           </span>
           <span className={`indicator ${environment?.hasLmStudio ? "active" : ""}`} title="LM Studio status">
             LM Studio
-          </span>
-          <span className={`indicator ${canUseCloudKey ? "active" : ""}`} title="Deepgram Key status">
-            Deepgram
-          </span>
-          <span className={`indicator ${canUseOpenrouter ? "active" : ""}`} title="OpenRouter Key status">
-            OpenRouter
           </span>
         </div>
       </div>

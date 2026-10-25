@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
   FileVideo,
-  Youtube,
   SlidersHorizontal,
   Clapperboard,
   Loader2,
@@ -23,7 +22,6 @@ interface HomeDashboardProps {
   showSettings: boolean;
   setShowSettings: (val: boolean) => void;
   importMedia: () => void;
-  setYoutubeModalOpen: (val: boolean) => void;
   selectProject: (id: string) => void;
   renameProject: (id: string) => void;
   deleteProject: (id: string) => void;
@@ -41,7 +39,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   showSettings,
   setShowSettings,
   importMedia,
-  setYoutubeModalOpen,
   selectProject,
   renameProject,
   deleteProject,
@@ -92,25 +89,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <span>Importar Grabación</span>
           </button>
           <button
-            className="secondary-action compact"
-            onClick={() => setYoutubeModalOpen(true)}
-            disabled={busy !== "idle" || !environment?.hasYtdlp}
-            title={!environment?.hasYtdlp ? "Instala yt-dlp para habilitar esta función" : "Descargar video desde YouTube"}
-          >
-            <Youtube size={16} />
-            <span>Importar de YouTube</span>
-          </button>
-          <button
             className={`secondary-action compact ${showSettings ? "active" : ""}`}
             onClick={() => setShowSettings(!showSettings)}
-            title="Configuración de Modelos e Inteligencia Artificial"
+            title="Configuración de Modelos Locales"
             style={{
               background: showSettings ? "var(--bg-surface-hover)" : "var(--bg-surface-raised)",
               borderColor: showSettings ? "var(--border-hover)" : "var(--border-default)",
             }}
           >
             <SlidersHorizontal size={16} />
-            <span>Configuración & APIs</span>
+            <span>Configuración</span>
           </button>
         </div>
       </header>

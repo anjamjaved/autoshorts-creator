@@ -9,14 +9,6 @@ interface QuickCopyModalProps {
   llmEngine: string;
   localLlmModel: string;
   lmstudioModel?: string;
-  anthropicKey?: string;
-  deepseekKey?: string;
-  deepseekModel?: string;
-  geminiKey?: string;
-  openaiKey?: string;
-  openrouterKey?: string;
-  openrouterModel?: string;
-  groqKey?: string;
   enableThinking: boolean;
 }
 
@@ -42,14 +34,6 @@ export function QuickCopyModal({
   llmEngine,
   localLlmModel,
   lmstudioModel = "",
-  anthropicKey = "",
-  deepseekKey = "",
-  deepseekModel = "",
-  geminiKey = "",
-  openaiKey = "",
-  openrouterKey = "",
-  openrouterModel = "",
-  groqKey = "",
   enableThinking,
 }: QuickCopyModalProps) {
   const [activeTab, setActiveTab] = useState<"srt" | "text" | "media">("srt");
@@ -154,18 +138,11 @@ export function QuickCopyModal({
     setIsGenerating(true);
     setError(null);
 
-    const activeLlmKey =
-      llmEngine === "openrouter"
-        ? openrouterKey.trim()
-        : "";
-
     const activeLlmModel =
       llmEngine === "local"
         ? localLlmModel.trim()
         : llmEngine === "lmstudio"
         ? lmstudioModel.trim() || null
-        : llmEngine === "openrouter"
-        ? openrouterModel.trim() || null
         : null;
 
     try {
@@ -175,7 +152,7 @@ export function QuickCopyModal({
         extraContext: extraContext.trim() || null,
         provider: llmEngine,
         modelName: activeLlmModel,
-        apiKey: activeLlmKey || null,
+        apiKey: null,
         enableThinking,
       });
       setCopyResult(result);

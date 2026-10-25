@@ -13,13 +13,12 @@ import { fileName } from "../utils/format";
 interface UseProjectActionsOptions {
   transcriptionEngine: string;
   onAutoPipeline?: (projectId: string, contentType: ContentType, dur: TargetDuration) => Promise<void>;
-  onProjectSelected?: (projectId: string | null, workflowGoal?: "clips" | "autoedit") => void;
-  onWorkflowGoalSelected?: (goal: "clips" | "autoedit") => void;
+  onProjectSelected?: (projectId: string | null) => void;
   setEnvironment?: (env: EnvironmentStatus) => void;
 }
 
 export function useProjectActions(options: UseProjectActionsOptions) {
-  const { transcriptionEngine, onAutoPipeline, onProjectSelected, onWorkflowGoalSelected, setEnvironment } = options;
+  const { transcriptionEngine, onAutoPipeline, onProjectSelected, setEnvironment } = options;
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [detail, setDetail] = useState<ProjectDetail | null>(null);
@@ -28,7 +27,6 @@ export function useProjectActions(options: UseProjectActionsOptions) {
 
   // Import state
   const [showStyleModal, setShowStyleModal] = useState(false);
-  const [workflowGoal, setWorkflowGoal] = useState<"clips" | "autoedit">("clips");
   const [selectedStyle, setSelectedStyle] = useState("modern-box");
   const [selectedContentType, setSelectedContentType] = useState<ContentType>("gaming");
   const [targetDuration, setTargetDuration] = useState<TargetDuration>(() => {
@@ -41,12 +39,6 @@ export function useProjectActions(options: UseProjectActionsOptions) {
   const [autoDetectMoments, setAutoDetectMoments] = useState<boolean>(false);
   const [refineTranscriptWithLlm, setRefineTranscriptWithLlm] = useState<boolean>(false);
   const [importModalTab, setImportModalTab] = useState<"subtitles" | "ai">("subtitles");
-
-  // YouTube import state
-  const [youtubeModalOpen, setYoutubeModalOpen] = useState(false);
-  const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [youtubeStatus, setYoutubeStatus] = useState<"idle" | "checking" | "warning" | "downloading">("idle");
-  const [youtubeWarningLicense, setYoutubeWarningLicense] = useState<string | null>(null);
 
   const refresh = useCallback(
     async (nextProjectId?: string) => {
@@ -90,22 +82,10 @@ export function useProjectActions(options: UseProjectActionsOptions) {
       await run("idle", async () => {
         const nextDetail = await invoke<ProjectDetail>("get_project_detail", { projectId });
         setDetail(nextDetail);
-        if (onProjectSelected) onProjectSelected(projectId, nextDetail.project.workflowGoal || "clips");
+        if (onProjectSelected) onProjectSelected(projectId);
       });
     },
     [run, onProjectSelected]
-  );
-
-  const updateProjectWorkflowGoal = useCallback(
-    async (projectId: string, goal: "clips" | "autoedit") => {
-      try {
-        await invoke("update_project_workflow_goal", { projectId, workflowGoal: goal });
-        await refresh(projectId);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      }
-    },
-    [refresh]
   );
 
   const renameProject = useCallback(
@@ -276,15 +256,11 @@ export function useProjectActions(options: UseProjectActionsOptions) {
           captionStyle: style,
           projectDir: projDir,
           moveSourceVideo: shouldMove,
-          workflowGoal: workflowGoal,
+          workflowGoal: "clips",
         });
         newProjectId = project.id;
         await refresh(project.id);
       });
-
-      if (newProjectId && onWorkflowGoalSelected) {
-        onWorkflowGoalSelected(workflowGoal);
-      }
 
       if (newProjectId && autoTranscribeOnImport && onAutoPipeline) {
         await onAutoPipeline(newProjectId, contentType, dur);
@@ -298,57 +274,11 @@ export function useProjectActions(options: UseProjectActionsOptions) {
       selectedContentType,
       targetDuration,
       autoTranscribeOnImport,
-      workflowGoal,
-      onWorkflowGoalSelected,
       run,
       refresh,
       onAutoPipeline,
     ]
   );
-
-  const executeYoutubeDownload = useCallback(async () => {
-    setYoutubeStatus("downloading");
-    setError(null);
-    try {
-      const downloadedPath = await invoke<string>("download_youtube_video", { url: youtubeUrl });
-      setYoutubeModalOpen(false);
-      setYoutubeUrl("");
-      setYoutubeStatus("idle");
-      setMediaPathToImport(downloadedPath);
-      setMoveSourceVideo(false);
-      try {
-        const defaultDir = await invoke<string>("get_default_project_dir", { sourcePath: downloadedPath });
-        setCustomProjectDir(defaultDir);
-      } catch {
-        setCustomProjectDir("");
-      }
-      setImportModalTab("subtitles");
-      setShowStyleModal(true);
-    } catch (err: any) {
-      setError(err.toString());
-      setYoutubeStatus("idle");
-    }
-  }, [youtubeUrl]);
-
-  const handleYoutubeImport = useCallback(async () => {
-    if (!youtubeUrl) return;
-    setYoutubeStatus("checking");
-    setError(null);
-    try {
-      const result = await invoke<{ isSafe: boolean; license: string | null }>("check_youtube_copyright", {
-        url: youtubeUrl,
-      });
-      if (!result.isSafe) {
-        setYoutubeWarningLicense(result.license || "Unknown / Not specified");
-        setYoutubeStatus("warning");
-        return;
-      }
-      await executeYoutubeDownload();
-    } catch (err: any) {
-      setError(err.toString());
-      setYoutubeStatus("idle");
-    }
-  }, [youtubeUrl, executeYoutubeDownload]);
 
   return {
     projects,
@@ -368,12 +298,9 @@ export function useProjectActions(options: UseProjectActionsOptions) {
     relinkProjectVideo,
     openProjectFolder,
     moveProjectFolder,
-    updateProjectWorkflowGoal,
     // Import state & actions
     showStyleModal,
     setShowStyleModal,
-    workflowGoal,
-    setWorkflowGoal,
     selectedStyle,
     setSelectedStyle,
     selectedContentType,
@@ -397,15 +324,5 @@ export function useProjectActions(options: UseProjectActionsOptions) {
     importMedia,
     handleSelectImportDir,
     confirmImport,
-    // YouTube
-    youtubeModalOpen,
-    setYoutubeModalOpen,
-    youtubeUrl,
-    setYoutubeUrl,
-    youtubeStatus,
-    setYoutubeStatus,
-    youtubeWarningLicense,
-    handleYoutubeImport,
-    executeYoutubeDownload,
   };
 }

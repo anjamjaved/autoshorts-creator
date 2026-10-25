@@ -7,7 +7,6 @@ import type {
   EnvironmentStatus,
   NormalizedTranscript,
   ProjectDetail,
-  SummaryResult,
   TargetDuration,
   Transcript,
 } from "../types";
@@ -36,12 +35,9 @@ interface UseMediaPipelineOptions {
   setBusy: (busy: import("../types").BusyState) => void;
   transcriptionEngine: string;
   whisperModel: string;
-  deepgramKey: string;
   llmEngine: string;
   localLlmModel: string;
   lmstudioModel: string;
-  openrouterKey: string;
-  openrouterModel: string;
   enableThinking: boolean;
   customMomentsPrompt: string;
   customOutputDir: string;
@@ -61,12 +57,9 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
     setBusy,
     transcriptionEngine,
     whisperModel,
-    deepgramKey,
     llmEngine,
     localLlmModel,
     lmstudioModel,
-    openrouterKey,
-    openrouterModel,
     enableThinking,
     customMomentsPrompt,
     customOutputDir,
@@ -97,16 +90,6 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [copyExtraContext, setCopyExtraContext] = useState<string>("");
   const [copiedDescId, setCopiedDescId] = useState<string | null>(null);
-
-  // Summary
-  const [showSummaryModal, setShowSummaryModal] = useState(false);
-  const [summaryTargetMinutes, setSummaryTargetMinutes] = useState<number>(8);
-  const [summaryAspectRatio, setSummaryAspectRatio] = useState<"original" | "9:16">("original");
-  const [summaryVibe, setSummaryVibe] = useState<"balanced" | "tryhard" | "funny">("balanced");
-  const [summaryStatus, setSummaryStatus] = useState<"idle" | "rendering" | "done">("idle");
-  const [summaryProgressMsg, setSummaryProgressMsg] = useState<string>("");
-  const [copiedChapters, setCopiedChapters] = useState(false);
-  const [summaryResult, setSummaryResult] = useState<SummaryResult | null>(null);
 
   // Derived transcript & clip maps
   const transcript = useMemo(() => {
@@ -151,44 +134,33 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
       unlistenTranscribe = unsub;
     });
 
-    let unlistenSummary: (() => void) | null = null;
-    void listen<{ status: string; message: string; percentage: number }>("summary-progress", (event) => {
-      setSummaryProgressMsg(event.payload.message);
-    }).then((unsub) => {
-      unlistenSummary = unsub;
-    });
-
     return () => {
       if (unlistenProgress) unlistenProgress();
       if (unlistenTranscribe) unlistenTranscribe();
-      if (unlistenSummary) unlistenSummary();
     };
   }, []);
 
   const getActiveLlmConfig = useCallback(() => {
-    const activeLlmKey = llmEngine === "openrouter" ? openrouterKey.trim() : "";
     const activeLlmModel =
       llmEngine === "local"
         ? localLlmModel.trim()
         : llmEngine === "lmstudio"
         ? lmstudioModel.trim() || null
-        : llmEngine === "openrouter"
-        ? openrouterModel.trim() || null
         : null;
-    return { activeLlmKey, activeLlmModel };
-  }, [llmEngine, openrouterKey, localLlmModel, lmstudioModel, openrouterModel]);
+    return { activeLlmKey: "", activeLlmModel };
+  }, [llmEngine, localLlmModel, lmstudioModel]);
 
   const transcribe = useCallback(async () => {
     if (!detail) return;
     setBusy("transcribe");
-    setTranscriptionProgress({ percentage: 0, message: "Iniciando transcripción..." });
+    setTranscriptionProgress({ percentage: 0, message: "Iniciando transcripción con faster-whisper..." });
     setError(null);
     try {
       const { activeLlmKey, activeLlmModel } = getActiveLlmConfig();
       await invoke<Transcript>("transcribe_project", {
         projectId: detail.project.id,
         provider: transcriptionEngine,
-        apiKey: transcriptionEngine === "deepgram" ? deepgramKey.trim() || null : null,
+        apiKey: null,
         whisperModel,
         refineWithLlm: false,
         llmEngine,
@@ -207,7 +179,6 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
     detail,
     getActiveLlmConfig,
     transcriptionEngine,
-    deepgramKey,
     whisperModel,
     llmEngine,
     enableThinking,
@@ -358,12 +329,6 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
           );
           return;
         }
-      } else {
-        const hasDG = env.hasDeepgramKey || deepgramKey.trim().length > 0;
-        if (!hasDG) {
-          setError("Import successful. Deepgram key is missing. Please add it to start transcription.");
-          return;
-        }
       }
 
       if (llmEngine === "local") {
@@ -380,12 +345,6 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
           );
           return;
         }
-      } else {
-        const hasActiveKey = env.hasOpenrouterKey || openrouterKey.trim().length > 0;
-        if (!hasActiveKey) {
-          setError("Transcription complete. OpenRouter API Key is missing. Please add it in settings to analyze viral moments.");
-          return;
-        }
       }
 
       // 1. Transcription
@@ -395,7 +354,7 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
         await invoke<Transcript>("transcribe_project", {
           projectId,
           provider: transcriptionEngine,
-          apiKey: transcriptionEngine === "deepgram" ? deepgramKey.trim() || null : null,
+          apiKey: null,
           whisperModel,
           refineWithLlm: false,
           llmEngine,
@@ -452,9 +411,7 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
       selectedContentType,
       targetDuration,
       transcriptionEngine,
-      deepgramKey,
       llmEngine,
-      openrouterKey,
       getActiveLlmConfig,
       whisperModel,
       enableThinking,
@@ -699,26 +656,6 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
     [detail, getActiveLlmConfig, llmEngine, enableThinking, refresh, setError]
   );
 
-  const generateSummary = useCallback(async () => {
-    if (!detail) return;
-    try {
-      setSummaryStatus("rendering");
-      setSummaryProgressMsg("Iniciando análisis de guión con IA...");
-      const res = await invoke<SummaryResult>("render_auto_summary", {
-        projectId: detail.project.id,
-        targetDurationMinutes: summaryTargetMinutes,
-        aspectRatio: summaryAspectRatio,
-        summaryVibe,
-        outputDir: customOutputDir || null,
-      });
-      setSummaryResult(res);
-      setSummaryStatus("done");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setSummaryStatus("idle");
-    }
-  }, [detail, summaryTargetMinutes, summaryAspectRatio, summaryVibe, customOutputDir, setError]);
-
   return {
     candidateProgress,
     transcriptionProgress,
@@ -769,22 +706,5 @@ export function useMediaPipeline(options: UseMediaPipelineOptions) {
     copyDescription,
     regenerateCandidateCopy,
     regeneratingCopyCandidateId,
-    // Summary
-    showSummaryModal,
-    setShowSummaryModal,
-    summaryTargetMinutes,
-    setSummaryTargetMinutes,
-    summaryAspectRatio,
-    setSummaryAspectRatio,
-    summaryVibe,
-    setSummaryVibe,
-    summaryStatus,
-    setSummaryStatus,
-    summaryProgressMsg,
-    copiedChapters,
-    setCopiedChapters,
-    summaryResult,
-    setSummaryResult,
-    generateSummary,
   };
 }

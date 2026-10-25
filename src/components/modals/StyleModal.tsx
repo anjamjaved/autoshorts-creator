@@ -19,8 +19,6 @@ interface StyleModalProps {
   isOpen: boolean;
   onClose: () => void;
   telemetry?: HardwareTelemetry | null;
-  workflowGoal?: "clips" | "autoedit";
-  setWorkflowGoal?: (goal: "clips" | "autoedit") => void;
   selectedStyle: string;
   setSelectedStyle: (style: string) => void;
   selectedContentType: ContentType;
@@ -36,16 +34,6 @@ interface StyleModalProps {
   lmstudioModel?: string;
   setLmstudioModel?: (model: string) => void;
   canUseLmStudio?: boolean;
-  deepseekModel: string;
-  setDeepseekModel: (model: string) => void;
-  openrouterModel: string;
-  setOpenrouterModel: (model: string) => void;
-  canUseDeepseek: boolean;
-  canUseClaude: boolean;
-  canUseOpenai: boolean;
-  canUseGroq: boolean;
-  canUseGemini: boolean;
-  canUseOpenrouter: boolean;
   transcriptionEngine: TranscriptionEngine;
   whisperModel: string;
   setWhisperModel: (model: string) => void;
@@ -71,8 +59,6 @@ export function StyleModal({
   isOpen,
   onClose,
   telemetry,
-  workflowGoal = "clips",
-  setWorkflowGoal,
   selectedStyle,
   setSelectedStyle,
   selectedContentType,
@@ -88,16 +74,6 @@ export function StyleModal({
   lmstudioModel = "",
   setLmstudioModel,
   canUseLmStudio = false,
-  deepseekModel,
-  setDeepseekModel,
-  openrouterModel,
-  setOpenrouterModel,
-  canUseDeepseek,
-  canUseClaude,
-  canUseOpenai,
-  canUseGroq,
-  canUseGemini,
-  canUseOpenrouter,
   transcriptionEngine,
   whisperModel,
   setWhisperModel,
@@ -131,7 +107,7 @@ export function StyleModal({
             </h3>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "0.72rem", padding: "0.2rem 0.55rem", borderRadius: "4px", background: "var(--bg-surface)", border: "1px solid var(--border-default)", color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
-                {importModalTab === "subtitles" ? "Pestaña 1 de 2: Objetivo y Formato" : "Pestaña 2 de 2: Procesamiento e IA"}
+                {importModalTab === "subtitles" ? "Pestaña 1 de 2: Subtítulos y Formato" : "Pestaña 2 de 2: Procesamiento e IA"}
               </span>
               <button
                 type="button"
@@ -144,77 +120,8 @@ export function StyleModal({
             </div>
           </div>
           <p style={{ margin: "0.2rem 0 0.85rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-            Elige qué tipo de contenido deseas producir para configurar el flujo óptimo automáticamente.
+            Configura el estilo visual y el motor de IA local para procesar tus clips virales.
           </p>
-
-          {/* Selector de Objetivo de Producción (Clips vs AutoEdición) */}
-          <div style={{ marginBottom: "0.85rem" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.65rem" }}>
-              <div
-                onClick={() => {
-                  setWorkflowGoal?.("clips");
-                  setAutoDetectMoments(true);
-                }}
-                style={{
-                  padding: "0.75rem 0.9rem",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  border: workflowGoal === "clips" ? "2px solid #10b981" : "1px solid var(--border-default)",
-                  background: workflowGoal === "clips" ? "rgba(16, 185, 129, 0.08)" : "var(--bg-surface)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4px",
-                  transition: "all 0.15s ease",
-                  boxShadow: workflowGoal === "clips" ? "0 0 12px rgba(16, 185, 129, 0.12)" : "none",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700, fontSize: "0.88rem", color: workflowGoal === "clips" ? "#34d399" : "var(--text-primary)" }}>
-                    <span style={{ fontSize: "1rem" }}>📱</span>
-                    <span>Clips & Shorts Virales</span>
-                  </div>
-                  {workflowGoal === "clips" && (
-                    <span style={{ fontSize: "0.64rem", fontWeight: 700, padding: "1px 5px", borderRadius: "10px", background: "#10b981", color: "#000" }}>ACTIVO</span>
-                  )}
-                </div>
-                <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.35, marginTop: "2px" }}>
-                  TikTok, Reels y Shorts (9:16 vertical, ganchos clave y subtítulos dinámicos).
-                </div>
-              </div>
-
-              <div
-                onClick={() => {
-                  setWorkflowGoal?.("autoedit");
-                  setAutoDetectMoments(false);
-                }}
-                style={{
-                  padding: "0.75rem 0.9rem",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  border: workflowGoal === "autoedit" ? "2px solid #3b82f6" : "1px solid var(--border-default)",
-                  background: workflowGoal === "autoedit" ? "rgba(59, 130, 246, 0.08)" : "var(--bg-surface)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4px",
-                  transition: "all 0.15s ease",
-                  boxShadow: workflowGoal === "autoedit" ? "0 0 12px rgba(59, 130, 246, 0.12)" : "none",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700, fontSize: "0.88rem", color: workflowGoal === "autoedit" ? "#60a5fa" : "var(--text-primary)" }}>
-                    <span style={{ fontSize: "1rem" }}>🎬</span>
-                    <span>AutoEdición para YouTube</span>
-                  </div>
-                  {workflowGoal === "autoedit" && (
-                    <span style={{ fontSize: "0.64rem", fontWeight: 700, padding: "1px 5px", borderRadius: "10px", background: "#3b82f6", color: "#fff" }}>ACTIVO</span>
-                  )}
-                </div>
-                <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.35, marginTop: "2px" }}>
-                  Montaje narrativo en 16:9 con IA (capítulos de YouTube, teaser inicial y corte de silencios).
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Tabs Navigation */}
           <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -273,41 +180,22 @@ export function StyleModal({
           {importModalTab === "subtitles" ? (
             <>
               {/* Nota contextual de subtítulos en vivo */}
-              {workflowGoal === "clips" ? (
-                <div
-                  style={{
-                    padding: "0.8rem 1rem",
-                    borderRadius: "8px",
-                    background: "rgba(16, 185, 129, 0.06)",
-                    border: "1px solid rgba(16, 185, 129, 0.2)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                  }}
-                >
-                  <Captions size={18} style={{ color: "#34d399", flexShrink: 0 }} />
-                  <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.45 }}>
-                    <strong style={{ color: "#34d399" }}>Subtítulos dinámicos activados:</strong> La tipografía, estilos, colores y animación palabra por palabra se personalizan con vista previa en vivo directamente en cada clip al momento de exportar.
-                  </div>
+              <div
+                style={{
+                  padding: "0.8rem 1rem",
+                  borderRadius: "8px",
+                  background: "rgba(16, 185, 129, 0.06)",
+                  border: "1px solid rgba(16, 185, 129, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <Captions size={18} style={{ color: "#34d399", flexShrink: 0 }} />
+                <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.45 }}>
+                  <strong style={{ color: "#34d399" }}>Subtítulos dinámicos activados:</strong> La tipografía, estilos, colores y animación palabra por palabra se personalizan con vista previa en vivo directamente en cada clip al momento de exportar.
                 </div>
-              ) : (
-                <div
-                  style={{
-                    padding: "0.8rem 1rem",
-                    borderRadius: "8px",
-                    background: "rgba(59, 130, 246, 0.06)",
-                    border: "1px solid rgba(59, 130, 246, 0.2)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                  }}
-                >
-                  <Sparkles size={18} style={{ color: "#60a5fa", flexShrink: 0 }} />
-                  <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.45 }}>
-                    <strong style={{ color: "#60a5fa" }}>Flujo AutoEdición para YouTube:</strong> Montaje panorámico 16:9 con corte de silencios, capítulos y resumen narrativo listo para exportar a Premiere o video final.
-                  </div>
-                </div>
-              )}
+              </div>
 
               {/* Selector de Duración Objetivo de Clips */}
               <div>
@@ -395,15 +283,15 @@ export function StyleModal({
                     <Sparkles size={16} color="var(--accent-primary)" />
                     Motor & Modelo de IA para Analizar Momentos:
                   </label>
-                  <span style={{ fontSize: "0.75rem", opacity: 0.75 }}>
-                    {llmEngine === "local" || llmEngine === "lmstudio" ? "Local y Privado" : "API Cloud"}
+                  <span style={{ fontSize: "0.75rem", opacity: 0.75, color: "#10b981", fontWeight: 600 }}>
+                    100% Local y Privado
                   </span>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: "0.75rem", alignItems: "center" }}>
                   {/* Engine Selector */}
                   <div>
-                    <label style={{ fontSize: "0.72rem", opacity: 0.7, display: "block", marginBottom: "0.2rem" }}>Proveedor</label>
+                    <label style={{ fontSize: "0.72rem", opacity: 0.7, display: "block", marginBottom: "0.2rem" }}>Proveedor Local</label>
                     <select
                       className="form-select"
                       value={llmEngine}
@@ -416,14 +304,13 @@ export function StyleModal({
                     >
                       <option value="local">Ollama (Local)</option>
                       <option value="lmstudio">LM Studio (Local)</option>
-                      <option value="openrouter">OpenRouter (Cloud)</option>
                     </select>
                   </div>
 
                   {/* Model Selector / Input */}
                   <div>
                     <label style={{ fontSize: "0.72rem", opacity: 0.7, display: "block", marginBottom: "0.2rem" }}>
-                      {llmEngine === "local" ? "Modelo de Ollama instalado" : llmEngine === "lmstudio" ? "Modelo de LM Studio" : "Modelo / Clave"}
+                      {llmEngine === "local" ? "Modelo de Ollama instalado" : "Modelo de LM Studio"}
                     </label>
 
                     {llmEngine === "local" ? (
@@ -456,7 +343,7 @@ export function StyleModal({
                           style={{ width: "100%", padding: "0.45rem 0.6rem", fontSize: "0.82rem", borderRadius: "6px" }}
                         />
                       )
-                    ) : llmEngine === "lmstudio" ? (
+                    ) : (
                       environment?.installedLmStudioModels && environment.installedLmStudioModels.length > 0 ? (
                         <select
                           className="form-select"
@@ -501,31 +388,6 @@ export function StyleModal({
                           </span>
                         </div>
                       )
-                    ) : (
-                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={openrouterModel || "anthropic/claude-3.5-sonnet"}
-                          onChange={(e) => {
-                            if (setOpenrouterModel) setOpenrouterModel(e.target.value);
-                          }}
-                          style={{ flex: 1, padding: "0.45rem 0.6rem", fontSize: "0.82rem", borderRadius: "6px" }}
-                        />
-                        <span style={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                          {canUseOpenrouter ? (
-                            <span style={{ color: "#10b981", fontWeight: 600 }}>API Key OK</span>
-                          ) : (
-                            <span
-                              onClick={onOpenSettings}
-                              style={{ color: "#ef4444", cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}
-                              title="Haz clic para abrir ajustes y poner tu API Key"
-                            >
-                              Falta API Key (Configurar)
-                            </span>
-                          )}
-                        </span>
-                      </div>
                     )}
                   </div>
                 </div>
@@ -571,7 +433,7 @@ export function StyleModal({
                       })}
                     </select>
                     <span style={{ fontSize: "0.72rem", opacity: 0.75 }}>
-                      {whisperModelsList.find((m) => m.id === whisperModel)?.description || "Modelo de Whisper para transcripción en GPU."}
+                      {whisperModelsList.find((m) => m.id === whisperModel)?.desc || "Modelo de Whisper para transcripción en GPU."}
                     </span>
                   </div>
                 )}
@@ -774,7 +636,7 @@ export function StyleModal({
               className="btn-confirm"
               onClick={onConfirm}
             >
-              {workflowGoal === "autoedit" ? "🎬 Importar e Ir a AutoEdición" : "📱 Importar y Buscar Clips"}
+              📱 Importar y Buscar Clips
             </button>
           </div>
         </div>

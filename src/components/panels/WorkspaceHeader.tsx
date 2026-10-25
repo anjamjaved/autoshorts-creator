@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   FolderOpen,
   FolderSync,
-  Zap,
   Scissors,
   FileText,
   Trash2,
@@ -22,7 +21,6 @@ interface WorkspaceHeaderProps {
   detail: ProjectDetail;
   showSettings: boolean;
   setShowSettings: (val: boolean) => void;
-  openSummaryModal: () => void;
   refresh: (projectId: string) => void;
   toggleProjectCompleted: (projectId: string) => void;
   relinkProjectVideo: (projectId: string) => void;
@@ -33,16 +31,14 @@ interface WorkspaceHeaderProps {
   selectedCount?: number;
   selectedCutCount?: number;
   selectedCaptionsCount?: number;
-  activeView?: "transcript" | "moments" | "autoedit";
-  onChangeView?: (view: "transcript" | "moments" | "autoedit") => void;
-  onUpdateWorkflowGoal?: (projectId: string, goal: "clips" | "autoedit") => Promise<void>;
+  activeView?: "transcript" | "moments";
+  onChangeView?: (view: "transcript" | "moments") => void;
 }
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   detail,
   showSettings,
   setShowSettings,
-  openSummaryModal,
   refresh,
   toggleProjectCompleted,
   relinkProjectVideo,
@@ -52,15 +48,9 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   error,
   activeView = "moments",
   onChangeView,
-  onUpdateWorkflowGoal,
 }) => {
   const isCompleted = detail.project.status === "completed";
   const isMissing = detail.project.sourceExists === false;
-  const workflowGoal = detail.project.workflowGoal || "clips";
-  const [showAllTabs, setShowAllTabs] = React.useState(false);
-
-  const showClipsTab = showAllTabs || workflowGoal === "clips";
-  const showAutoEditTab = showAllTabs || workflowGoal === "autoedit";
 
   const statusLabel = isMissing
     ? "Archivo movido o eliminado"
@@ -138,25 +128,16 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
                   fontSize: "0.72rem",
                   padding: "2px 8px",
                   borderRadius: "4px",
-                  background: workflowGoal === "autoedit" ? "rgba(59, 130, 246, 0.1)" : "rgba(16, 185, 129, 0.1)",
-                  border: workflowGoal === "autoedit" ? "1px solid rgba(59, 130, 246, 0.3)" : "1px solid rgba(16, 185, 129, 0.3)",
-                  color: workflowGoal === "autoedit" ? "#60a5fa" : "#34d399",
+                  background: "rgba(16, 185, 129, 0.1)",
+                  border: "1px solid rgba(16, 185, 129, 0.3)",
+                  color: "#34d399",
                   fontWeight: 600,
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "4px",
-                  cursor: onUpdateWorkflowGoal ? "pointer" : "default",
                 }}
-                onClick={() => {
-                  if (onUpdateWorkflowGoal) {
-                    const newGoal = workflowGoal === "autoedit" ? "clips" : "autoedit";
-                    void onUpdateWorkflowGoal(detail.project.id, newGoal);
-                    onChangeView?.(newGoal === "autoedit" ? "autoedit" : "moments");
-                  }
-                }}
-                title={onUpdateWorkflowGoal ? `Flujo: ${workflowGoal === 'autoedit' ? 'AutoEdición YouTube' : 'Clips & Shorts'}. Haz clic para alternar flujo.` : undefined}
               >
-                <span>{workflowGoal === "autoedit" ? "🎬 YouTube 16:9" : "📱 Shorts & Clips"}</span>
+                <span>📱 Shorts & Clips</span>
               </span>
             </div>
             <h2>{detail.project.name || fileName(detail.project.sourcePath)}</h2>
@@ -223,7 +204,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             </button>
           )}
 
-          {/* Segmented View Switcher dinámico según objetivo del proyecto */}
+          {/* Segmented View Switcher: Transcripción vs Clips */}
           <div className="view-mode-segmented">
             <button
               type="button"
@@ -235,69 +216,39 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               <span>Transcripción</span>
             </button>
 
-            {showClipsTab && (
-              <button
-                type="button"
-                className={`view-mode-pill ${activeView === "moments" ? "active" : ""}`}
-                onClick={() => onChangeView?.("moments")}
-                title="Explorar, previsualizar y cortar los clips candidatos detectados"
-              >
-                <Scissors size={13} />
-                <span>Clips y Momentos</span>
-                {detail.candidates.length > 0 && (
-                  <span
-                    style={{
-                      fontSize: "0.68rem",
-                      padding: "1px 5px",
-                      borderRadius: "10px",
-                      background: activeView === "moments" ? "rgba(255, 255, 255, 0.2)" : "var(--bg-surface-raised)",
-                      color: activeView === "moments" ? "#fafafa" : "var(--text-secondary)",
-                      fontFamily: "var(--font-mono, monospace)",
-                      marginLeft: "2px",
-                    }}
-                  >
-                    {detail.candidates.length}
-                  </span>
-                )}
-              </button>
-            )}
-
-            {showAutoEditTab && (
-              <button
-                type="button"
-                className={`view-mode-pill ${activeView === "autoedit" ? "active" : ""}`}
-                onClick={() => onChangeView?.("autoedit")}
-                title="Sección de montaje automático con IA y galería de autoedits para YouTube"
-              >
-                <Zap size={13} />
-                <span>AutoEdición con IA</span>
-              </button>
-            )}
-
             <button
               type="button"
-              className="view-mode-pill"
-              onClick={() => setShowAllTabs(!showAllTabs)}
-              title={showAllTabs ? "Mostrar solo las pestañas del flujo actual" : "Ver todas las herramientas (Clips y AutoEdición)"}
-              style={{
-                padding: "0 7px",
-                fontSize: "0.72rem",
-                opacity: showAllTabs ? 1 : 0.6,
-                color: showAllTabs ? "var(--accent-primary)" : "var(--text-secondary)",
-                fontFamily: "var(--font-mono, monospace)",
-              }}
+              className={`view-mode-pill ${activeView === "moments" ? "active" : ""}`}
+              onClick={() => onChangeView?.("moments")}
+              title="Explorar, previsualizar y cortar los clips candidatos detectados"
             >
-              {showAllTabs ? "✕" : "+"}
+              <Scissors size={13} />
+              <span>Clips y Momentos</span>
+              {detail.candidates.length > 0 && (
+                <span
+                  style={{
+                    fontSize: "0.68rem",
+                    padding: "1px 5px",
+                    borderRadius: "10px",
+                    background: activeView === "moments" ? "rgba(255, 255, 255, 0.2)" : "var(--bg-surface-raised)",
+                    color: activeView === "moments" ? "#fafafa" : "var(--text-secondary)",
+                    fontFamily: "var(--font-mono, monospace)",
+                    marginLeft: "2px",
+                  }}
+                >
+                  {detail.candidates.length}
+                </span>
+              )}
             </button>
           </div>
 
           <button
             className={`secondary-action settings-toggle ${showSettings ? "active" : ""}`}
             onClick={() => setShowSettings(!showSettings)}
-            title="Configuración de Modelos & APIs"
+            title="Configuración de Modelos Locales"
           >
             <SlidersHorizontal size={15} />
-            <span>Configuración & APIs</span>
+            <span>Configuración</span>
           </button>
           <button className="secondary-action" onClick={() => void refresh(detail.project.id)} title="Actualizar" style={{ width: "36px", padding: 0 }}>
             <RefreshCw size={15} />

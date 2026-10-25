@@ -38,7 +38,7 @@ if "%PYTHON_EXE%"=="" (
 )
 
 :: 2. Ejecutar la aplicacion
-echo [>] Lanzando AutoShorts...
+echo [*] Lanzando AutoShorts...
 echo.
 "%PYTHON_EXE%" run.py
 

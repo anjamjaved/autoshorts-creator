@@ -36,28 +36,10 @@ interface SettingsPanelProps {
   modelDownloadStatus: string;
   modelDownloadProgress: number;
   onPullModel: (model: string) => Promise<void>;
-  openrouterKey: string;
-  setOpenrouterKey: (key: string) => void;
-  openrouterModel: string;
-  setOpenrouterModel: (model: string) => void;
   lmstudioModel?: string;
   setLmstudioModel?: (model: string) => void;
   lmstudioBaseUrl?: string;
   setLmstudioBaseUrl?: (url: string) => void;
-  deepseekKey: string;
-  setDeepseekKey: (key: string) => void;
-  deepseekModel: string;
-  setDeepseekModel: (model: string) => void;
-  anthropicKey: string;
-  setAnthropicKey: (key: string) => void;
-  openaiKey: string;
-  setOpenaiKey: (key: string) => void;
-  groqKey: string;
-  setGroqKey: (key: string) => void;
-  geminiKey: string;
-  setGeminiKey: (key: string) => void;
-  deepgramKey: string;
-  setDeepgramKey: (key: string) => void;
   customMomentsPrompt: string;
   setCustomMomentsPrompt: (prompt: string) => void;
   defaultMomentsPrompt: string;
@@ -88,28 +70,10 @@ export function SettingsPanel({
   modelDownloadStatus,
   modelDownloadProgress,
   onPullModel,
-  openrouterKey,
-  setOpenrouterKey,
-  openrouterModel,
-  setOpenrouterModel,
   lmstudioModel = "",
   setLmstudioModel,
   lmstudioBaseUrl = "http://127.0.0.1:1234/v1",
   setLmstudioBaseUrl,
-  deepseekKey,
-  setDeepseekKey,
-  deepseekModel,
-  setDeepseekModel,
-  anthropicKey,
-  setAnthropicKey,
-  openaiKey,
-  setOpenaiKey,
-  groqKey,
-  setGroqKey,
-  geminiKey,
-  setGeminiKey,
-  deepgramKey,
-  setDeepgramKey,
   customMomentsPrompt,
   setCustomMomentsPrompt,
   defaultMomentsPrompt,
@@ -186,19 +150,18 @@ export function SettingsPanel({
       <div className="key-stack-horizontal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem" }}>
         {/* Transcription Engine */}
         <label>
-          <span style={{ fontWeight: 600, fontSize: "0.78rem", color: "var(--text-secondary)", letterSpacing: "0.04em", display: "block", marginBottom: "0.4rem" }}>MOTOR DE TRANSCRIPCIÓN</span>
+          <span style={{ fontWeight: 600, fontSize: "0.78rem", color: "var(--text-secondary)", letterSpacing: "0.04em", display: "block", marginBottom: "0.4rem" }}>MOTOR DE TRANSCRIPCIÓN (LOCAL)</span>
           <select
             className="form-select"
             value={transcriptionEngine}
             onChange={(event) => {
-              const eng = event.target.value as "deepgram" | "local";
+              const eng = event.target.value as "local";
               setTranscriptionEngine(eng);
               syncConfig({ transcriptionEngine: eng });
             }}
             style={{ width: "100%" }}
           >
-            <option value="local">Local Whisper (Offline - GPU CUDA)</option>
-            <option value="deepgram">Deepgram API (Cloud)</option>
+            <option value="local">Faster-Whisper (CTranslate2 - CUDA / CPU)</option>
           </select>
         </label>
 
@@ -236,7 +199,7 @@ export function SettingsPanel({
               })}
             </select>
             <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
-              {whisperModelsList.find((m) => m.id === whisperModel)?.description || "Modelos de alta precisión para GPU NVIDIA."}
+              {whisperModelsList.find((m) => m.id === whisperModel)?.desc || "Modelos de alta precisión para GPU NVIDIA."}
             </span>
           </label>
         )}
@@ -256,7 +219,6 @@ export function SettingsPanel({
           >
             <option value="local">Ollama (Offline Local en tu PC)</option>
             <option value="lmstudio">LM Studio (Local en tu PC - Puerto 1234)</option>
-            <option value="openrouter">OpenRouter (Cloud - Por si acaso)</option>
           </select>
         </label>
 
@@ -373,46 +335,6 @@ export function SettingsPanel({
           </div>
         )}
 
-        {/* OpenRouter */}
-        {llmEngine === "openrouter" && (
-          <div style={{ gridColumn: "1 / -1", padding: "1rem", borderRadius: "8px", background: "var(--bg-surface)", border: "1px solid var(--border-default)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-              <label>
-                <span style={{ fontWeight: 600, fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.3rem" }}>OPENROUTER API KEY</span>
-                <input
-                  type="password"
-                  className="form-input"
-                  value={openrouterKey}
-                  onChange={(event) => {
-                    setOpenrouterKey(event.target.value);
-                    syncConfig({ openrouterKey: event.target.value });
-                  }}
-                  placeholder={environment?.hasOpenrouterKey ? "Cargado desde variables de entorno" : "sk-or-v1-..."}
-                  style={{ width: "100%" }}
-                />
-              </label>
-              <label>
-                <span style={{ fontWeight: 600, fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.3rem" }}>MODELO DE OPENROUTER</span>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={openrouterModel}
-                  onChange={(event) => {
-                    setOpenrouterModel(event.target.value);
-                    syncConfig({ openrouterModel: event.target.value });
-                  }}
-                  placeholder="meta-llama/llama-3.3-70b-instruct:free"
-                  style={{ width: "100%" }}
-                />
-              </label>
-            </div>
-
-            <div style={{ padding: "0.6rem 0.8rem", borderRadius: "6px", background: "rgba(255, 255, 255, 0.02)", border: "1px solid var(--border-default)", fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>Protección Anti-Saturación:</strong> AutoShorts incorpora pausas de 2.5s entre bloques y reintentos automáticos con espera exponencial ante códigos 429 (Rate Limit).
-            </div>
-          </div>
-        )}
-
         {/* LM Studio */}
         {llmEngine === "lmstudio" && (
           <div style={{ gridColumn: "1 / -1", padding: "1rem", borderRadius: "8px", background: "var(--bg-surface)", border: "1px solid var(--border-default)" }}>
@@ -492,24 +414,6 @@ export function SettingsPanel({
               </label>
             </div>
           </div>
-        )}
-
-        {/* Deepgram Key if selected */}
-        {transcriptionEngine === "deepgram" && (
-          <label style={{ gridColumn: "1 / -1" }}>
-            <span style={{ fontWeight: 600, fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.3rem" }}>DEEPGRAM API KEY</span>
-            <input
-              type="password"
-              className="form-input"
-              value={deepgramKey}
-              onChange={(event) => {
-                setDeepgramKey(event.target.value);
-                syncConfig({ deepgramKey: event.target.value });
-              }}
-              placeholder={environment?.hasDeepgramKey ? "Cargado desde env" : "Token Deepgram..."}
-              style={{ width: "100%" }}
-            />
-          </label>
         )}
       </div>
 
