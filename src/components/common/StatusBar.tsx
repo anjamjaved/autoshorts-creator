@@ -7,6 +7,7 @@ interface StatusBarProps {
   telemetry: HardwareTelemetry | null;
   llmMemoryStatus?: LlmMemoryStatus | null;
   onUnloadLlm?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
@@ -14,7 +15,11 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   telemetry,
   llmMemoryStatus,
   onUnloadLlm,
+  onOpenSettings,
 }) => {
+  const ollamaCount = environment?.installedOllamaModels?.length ?? 0;
+  const lmStudioCount = environment?.installedLmStudioModels?.length ?? 0;
+
   return (
     <footer className="status-bar">
       <div className="status-bar-left" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
@@ -96,14 +101,41 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <span className={`indicator ${environment?.hasFfprobe ? "active" : ""}`} title="FFprobe status">
             ffprobe
           </span>
-          <span className={`indicator ${environment?.hasLocalWhisperModel ? "active" : ""}`} title="Faster-Whisper status">
+          <span
+            className={`indicator ${environment?.hasLocalWhisperModel ? "active" : ""}`}
+            onClick={onOpenSettings}
+            style={{ cursor: onOpenSettings ? "pointer" : "default" }}
+            title={
+              environment?.hasLocalWhisperModel
+                ? "Faster-Whisper: Motor de transcripción acelerado por hardware activo. Clic para configurar."
+                : "Faster-Whisper: No detectado en el entorno local. Clic para configurar."
+            }
+          >
             Faster-Whisper
           </span>
-          <span className={`indicator ${environment?.hasOllama ? "active" : ""}`} title="Ollama status">
-            Ollama
+          <span
+            className={`indicator ${environment?.hasOllama ? "active" : ""}`}
+            onClick={onOpenSettings}
+            style={{ cursor: onOpenSettings ? "pointer" : "default" }}
+            title={
+              environment?.hasOllama
+                ? `Ollama: Activo en http://127.0.0.1:11434 (${ollamaCount} modelos disponibles). Clic para configurar.`
+                : "Ollama: Desconectado. Clic para configurar o ver modelos recomendados."
+            }
+          >
+            {environment?.hasOllama && ollamaCount > 0 ? `Ollama (${ollamaCount})` : "Ollama"}
           </span>
-          <span className={`indicator ${environment?.hasLmStudio ? "active" : ""}`} title="LM Studio status">
-            LM Studio
+          <span
+            className={`indicator ${environment?.hasLmStudio ? "active" : ""}`}
+            onClick={onOpenSettings}
+            style={{ cursor: onOpenSettings ? "pointer" : "default" }}
+            title={
+              environment?.hasLmStudio
+                ? `LM Studio: Conectado en puerto 1234 (${lmStudioCount} modelos detectados). Clic para configurar.`
+                : "LM Studio: Desconectado. Clic para configurar."
+            }
+          >
+            {environment?.hasLmStudio && lmStudioCount > 0 ? `LM Studio (${lmStudioCount})` : "LM Studio"}
           </span>
         </div>
       </div>

@@ -7,12 +7,12 @@ warnings.filterwarnings("ignore", message=".*Triton.*")
 
 
 WHISPER_SPECS = {
-    "tiny": {"vram": "~0.5 GB (Faster)", "desc": "Ultra rápido, precisión básica", "recommended": False},
-    "base": {"vram": "~0.7 GB (Faster)", "desc": "Rápido y ligero", "recommended": False},
-    "small": {"vram": "~1.2 GB (Faster)", "desc": "Equilibrado para pruebas rápidas", "recommended": False},
-    "medium": {"vram": "~2.5 GB (Faster)", "desc": "Gran precisión para la mayoría de audios", "recommended": False},
-    "large-v3-turbo": {"vram": "~3.2 GB (Faster)", "desc": "Máxima velocidad + Altísima precisión (Recomendado para RTX 2060 12GB)", "recommended": True},
-    "large-v3": {"vram": "~4.5 GB (Faster)", "desc": "Máxima precisión absoluta en español y jerga gamer", "recommended": False},
+    "tiny": {"vram": "~0.5 GB", "desc": "Ultrarrápido y mínimo consumo de memoria", "recommended": False},
+    "base": {"vram": "~0.7 GB", "desc": "Rápido y ligero para pruebas o equipos modestos", "recommended": False},
+    "small": {"vram": "~1.2 GB", "desc": "Equilibrado para transcripción ágil en hardware estándar", "recommended": False},
+    "medium": {"vram": "~2.5 GB", "desc": "Gran precisión en diálogos y fondos ruidosos", "recommended": False},
+    "large-v3-turbo": {"vram": "~3.2 GB", "desc": "Alta precisión y velocidad máxima optimizada (Faster Turbo)", "recommended": True},
+    "large-v3": {"vram": "~4.5 GB", "desc": "Máxima precisión absoluta en acentos y jerga gamer", "recommended": False},
 }
 
 

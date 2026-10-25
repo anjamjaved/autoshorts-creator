@@ -13,6 +13,7 @@ import {
   ModelBadge,
   getWhisperTrafficLevel,
   getOllamaTrafficLevel,
+  sortWhisperModels,
 } from "../common/ModelBadge";
 
 interface StyleModalProps {
@@ -94,6 +95,9 @@ export function StyleModal({
   onOpenSettings,
   onConfirm,
 }: StyleModalProps) {
+  const sortedWhisper = React.useMemo(() => {
+    return sortWhisperModels(whisperModelsList, telemetry?.vramTotalMb, telemetry?.hasGpu);
+  }, [whisperModelsList, telemetry?.vramTotalMb, telemetry?.hasGpu]);
   if (!isOpen) return null;
 
   return (
@@ -302,8 +306,12 @@ export function StyleModal({
                       }}
                       style={{ width: "100%", padding: "0.45rem 0.6rem", fontSize: "0.82rem", borderRadius: "6px" }}
                     >
-                      <option value="local">Ollama (Local)</option>
-                      <option value="lmstudio">LM Studio (Local)</option>
+                      <option value="local">
+                        Ollama {environment?.hasOllama ? `(En línea: ${environment.installedOllamaModels?.length || 0} modelos)` : "(Desconectado)"}
+                      </option>
+                      <option value="lmstudio">
+                        LM Studio {environment?.hasLmStudio ? `(En línea: ${environment.installedLmStudioModels?.length || 0} modelos)` : "(Desconectado)"}
+                      </option>
                     </select>
                   </div>
 
@@ -423,14 +431,30 @@ export function StyleModal({
                       }}
                       style={{ width: "100%", padding: "0.45rem 0.6rem", fontSize: "0.82rem", borderRadius: "6px" }}
                     >
-                      {whisperModelsList.map((m) => {
-                        const traf = getWhisperTrafficLevel(m.id, telemetry?.vramTotalMb);
-                        return (
-                          <option key={m.id} value={m.id}>
-                            {m.name} ({m.vram} VRAM) — {traf.label} {m.downloaded ? "[Descargado]" : "[Descargar al usar]"}
-                          </option>
-                        );
-                      })}
+                      {sortedWhisper.downloaded.length > 0 && (
+                        <optgroup label="✓ Modelos descargados en tu equipo">
+                          {sortedWhisper.downloaded.map((m) => {
+                            const traf = getWhisperTrafficLevel(m.id, telemetry?.vramTotalMb, telemetry?.hasGpu);
+                            return (
+                              <option key={m.id} value={m.id}>
+                                {m.name} ({m.vram}) - {traf.label}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      )}
+                      {sortedWhisper.available.length > 0 && (
+                        <optgroup label="Descargar automáticamente al usar">
+                          {sortedWhisper.available.map((m) => {
+                            const traf = getWhisperTrafficLevel(m.id, telemetry?.vramTotalMb, telemetry?.hasGpu);
+                            return (
+                              <option key={m.id} value={m.id}>
+                                {m.name} ({m.vram}) - {traf.label}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      )}
                     </select>
                     <span style={{ fontSize: "0.72rem", opacity: 0.75 }}>
                       {whisperModelsList.find((m) => m.id === whisperModel)?.desc || "Modelo de Whisper para transcripción en GPU."}
@@ -542,7 +566,7 @@ export function StyleModal({
                     </div>
                   ) : (
                     <div>
-                      <strong style={{ color: "#fafafa" }}>Desactivado (Recomendado):</strong> La IA responde de forma directa sin cadena de razonamiento previa. Recomendado para tu NVIDIA RTX 2060 (12GB) con procesamiento hasta 30 veces más ágil.
+                      <strong style={{ color: "#fafafa" }}>Desactivado (Recomendado):</strong> La IA responde de forma directa sin cadena de razonamiento previa. {telemetry?.hasGpu ? `Recomendado para tu ${telemetry.gpuName} con procesamiento hasta 30 veces más ágil.` : "Recomendado para procesamiento directo hasta 30 veces más ágil."}
                     </div>
                   )}
                 </div>

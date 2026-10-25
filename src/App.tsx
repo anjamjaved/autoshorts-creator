@@ -16,7 +16,6 @@ import { CandidatePanel } from "./components/panels/CandidatePanel";
 import { StatusBar } from "./components/common/StatusBar";
 
 // Modals
-import { OnboardingModal } from "./components/modals/OnboardingModal";
 import { SettingsPanel } from "./components/modals/SettingsPanel";
 import { ModalContainer } from "./components/modals/ModalContainer";
 
@@ -73,34 +72,6 @@ export function App() {
   useEffect(() => {
     void projectActions.refresh();
   }, []);
-
-  if (settings.isOnboarded === null) {
-    return (
-      <div
-        className="onboarding-loading"
-        style={{ display: "grid", placeItems: "center", height: "100vh", background: "var(--bg-base)" }}
-      >
-        <Loader2 className="spin" size={32} color="var(--accent-primary)" />
-      </div>
-    );
-  }
-
-  if (settings.isOnboarded === false) {
-    return (
-      <OnboardingModal
-        environment={settings.environment}
-        onComplete={() => {
-          localStorage.setItem("autoshorts_onboarded", "true");
-          void invoke("save_app_config", { onboarded: true });
-          settings.setIsOnboarded(true);
-        }}
-        setTranscriptionEngine={settings.setTranscriptionEngine}
-        setLlmEngine={settings.setLlmEngine}
-        setLocalLlmModel={settings.setLocalLlmModel}
-        refreshEnv={() => projectActions.refresh()}
-      />
-    );
-  }
 
   const settingsNode = (
     <SettingsPanel
@@ -258,6 +229,7 @@ export function App() {
         telemetry={settings.telemetry}
         llmMemoryStatus={settings.llmMemoryStatus}
         onUnloadLlm={settings.unloadActiveModel}
+        onOpenSettings={() => setShowSettings(true)}
       />
 
       <ModalContainer

@@ -12,7 +12,6 @@ import type {
 export function useAppSettings() {
   const [environment, setEnvironment] = useState<EnvironmentStatus | null>(null);
   const [telemetry, setTelemetry] = useState<HardwareTelemetry | null>(null);
-  const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
 
   const [transcriptionEngine, setTranscriptionEngine] = useState<TranscriptionEngine>(() => {
     return (localStorage.getItem("autoshorts_transcription_engine") as TranscriptionEngine) || "local";
@@ -98,10 +97,17 @@ export function useAppSettings() {
   };
 
   const handleResetConfig = () => {
-    if (window.confirm("¿Seguro que deseas reiniciar la configuración y volver al asistente inicial?")) {
+    if (window.confirm("¿Seguro que deseas restablecer la configuración por defecto?")) {
       localStorage.clear();
-      void invoke("save_app_config", { onboarded: false });
-      setIsOnboarded(false);
+      void invoke("save_app_config", {
+        llmEngine: "local",
+        localLlmModel: "qwen2.5:7b",
+        whisperModel: "large-v3-turbo",
+      });
+      setLlmEngine("local");
+      setLocalLlmModel("qwen2.5:7b");
+      setWhisperModel("large-v3-turbo");
+      void refreshEnv();
     }
   };
 
@@ -111,6 +117,32 @@ export function useAppSettings() {
       setEnvironment(env);
       if (env.whisperModels) {
         setWhisperModelsList(env.whisperModels);
+      }
+
+      // Autodetección inteligente si el usuario no tiene fijado un motor válido o si el actual está caído
+      const savedEngine = localStorage.getItem("autoshorts_llm_engine");
+      const hasSavedEngine = savedEngine === "local" || savedEngine === "lmstudio";
+
+      if (env.hasLmStudio && env.installedLmStudioModels && env.installedLmStudioModels.length > 0) {
+        if (!hasSavedEngine || (savedEngine === "local" && !env.hasOllama)) {
+          setLlmEngine("lmstudio");
+          localStorage.setItem("autoshorts_llm_engine", "lmstudio");
+          const savedLmModel = localStorage.getItem("autoshorts_lmstudio_model");
+          if (!savedLmModel && env.installedLmStudioModels[0]) {
+            setLmstudioModel(env.installedLmStudioModels[0]);
+            localStorage.setItem("autoshorts_lmstudio_model", env.installedLmStudioModels[0]);
+          }
+        }
+      } else if (env.hasOllama && env.installedOllamaModels && env.installedOllamaModels.length > 0) {
+        if (!hasSavedEngine || (savedEngine === "lmstudio" && !env.hasLmStudio)) {
+          setLlmEngine("local");
+          localStorage.setItem("autoshorts_llm_engine", "local");
+          const savedOllamaModel = localStorage.getItem("autoshorts_local_llm_model");
+          if (!savedOllamaModel && env.installedOllamaModels[0]) {
+            setLocalLlmModel(env.installedOllamaModels[0]);
+            localStorage.setItem("autoshorts_local_llm_model", env.installedOllamaModels[0]);
+          }
+        }
       }
     } catch (err) {
       console.error("Failed to load environment status", err);
@@ -135,16 +167,8 @@ export function useAppSettings() {
         if (cfg.lmstudioModel) setLmstudioModel(cfg.lmstudioModel);
         if (cfg.lmstudioBaseUrl) setLmstudioBaseUrl(cfg.lmstudioBaseUrl);
         if (cfg.customMomentsPrompt) setCustomMomentsPrompt(cfg.customMomentsPrompt);
-        if (cfg.onboarded !== undefined) {
-          setIsOnboarded(Boolean(cfg.onboarded));
-        } else {
-          setIsOnboarded(false);
-        }
       })
-      .catch(() => {
-        const value = localStorage.getItem("autoshorts_onboarded");
-        setIsOnboarded(value === "true");
-      });
+      .catch(() => {});
 
     const fetchTelemetry = () => {
       invoke<HardwareTelemetry>("get_hardware_telemetry")
@@ -305,8 +329,6 @@ export function useAppSettings() {
     environment,
     setEnvironment,
     telemetry,
-    isOnboarded,
-    setIsOnboarded,
     handleResetConfig,
     transcriptionEngine,
     setTranscriptionEngine,
