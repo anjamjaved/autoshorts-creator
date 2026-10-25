@@ -597,6 +597,7 @@ export function SettingsPanel({
                 style={{ height: "26px", padding: "0 8px", fontSize: "0.72rem", display: "inline-flex", alignItems: "center", gap: "4px" }}
                 onClick={() => {
                   setCustomMomentsPrompt("");
+                  localStorage.removeItem("autoshorts_custom_moments_prompt");
                   syncConfig({ customMomentsPrompt: "" });
                 }}
                 title="Restablecer al prompt estándar"
@@ -607,17 +608,18 @@ export function SettingsPanel({
 
             <textarea
               className="form-textarea"
-              rows={4}
+              rows={6}
               value={customMomentsPrompt || defaultMomentsPrompt}
               onChange={(e) => {
                 setCustomMomentsPrompt(e.target.value);
+                localStorage.setItem("autoshorts_custom_moments_prompt", e.target.value);
                 syncConfig({ customMomentsPrompt: e.target.value });
               }}
               placeholder="Instrucciones para la IA..."
               style={{
                 width: "100%",
-                minHeight: "95px",
-                maxHeight: "180px",
+                minHeight: "135px",
+                maxHeight: "280px",
                 fontSize: "0.78rem",
                 fontFamily: "var(--font-mono, monospace)",
                 lineHeight: "1.5",

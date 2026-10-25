@@ -212,6 +212,19 @@ def expand_short_candidate(
     return start, min(new_end, start + target_max)
 
 
+def _coerce_candidate_timestamp(val: Any) -> float:
+    """Safely converts float, int or string timestamps (e.g. '00:01:23.450' or '83.45') to seconds float."""
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        v = val.strip()
+        try:
+            return float(v)
+        except ValueError:
+            return parse_time_to_seconds(v)
+    return 0.0
+
+
 def parse_candidate_json(
     text: str,
     min_duration: float = 5.0,
@@ -299,16 +312,16 @@ def parse_candidate_json(
     drafts = []
     for item in candidates_arr:
         try:
-            start = float(item.get("start", 0.0))
-            end = float(item.get("end", 0.0))
+            start = _coerce_candidate_timestamp(item.get("start", 0.0))
+            end = _coerce_candidate_timestamp(item.get("end", 0.0))
             score = float(item.get("score", 0.8))
             if score > 1.0 and score <= 10.0:
                 score /= 10.0
             elif score > 10.0:
                 score /= 100.0
 
-            hook = str(item.get("hook", "")).strip()
-            rationale = str(item.get("rationale", "")).strip()
+            hook = str(item.get("hook") or item.get("viral_hook_text") or item.get("title") or "").strip()
+            rationale = str(item.get("rationale") or item.get("reasoning") or item.get("reason") or "").strip()
             description = str(item.get("description", "")).strip()
 
             clean_hook = hook.strip(" .…_")
@@ -320,7 +333,7 @@ def parse_candidate_json(
                 continue
 
             if not description and hook:
-                description = f"{hook}. ¡Mira este momento destacado! #autoshorts #viral #clips"
+                description = f"{hook}. ¿Qué opinas? Déjalo en comentarios. #shorts #viral #gaming"
 
             dur = end - start
             if dur < target_min:
@@ -337,7 +350,7 @@ def parse_candidate_json(
 
             effective_min = min_floor if target_duration == "30s" else max(30.0, target_min * 0.6)
             if dur >= effective_min and hook:
-                hook_title = str(item.get("hook_title") or item.get("hookTitle") or "").strip()
+                hook_title = str(item.get("hook_title") or item.get("hookTitle") or item.get("viral_hook_text") or hook).strip()
                 virality = item.get("virality")
                 if not isinstance(virality, dict):
                     score_val = max(0.0, min(1.0, score))
@@ -609,7 +622,7 @@ def generate_fallback_candidates(
                 "score": 0.85,
                 "hook": hook_text,
                 "rationale": "Momento seleccionado por alta densidad de actividad.",
-                "description": f"{hook_text} #autoshorts #viral #gaming"
+                "description": f"{hook_text}. ¿Qué opinas? #gaming #viral #shorts"
             })
         curr += step
 
@@ -743,7 +756,7 @@ def detect_candidates_pipeline(
                         "hook": "💥 Jugada Clutch y Acción Intensa",
                         "hook_title": "Jugada Épica",
                         "rationale": "Pico acústico intenso con concentración del streamer.",
-                        "description": "¡Momento de máxima tensión y concentración! #gaming #clutch #action"
+                        "description": "¡Momento de máxima tensión y jugada épica! #gaming #clutch #shorts"
                     })
 
     finally:
@@ -876,28 +889,29 @@ def generate_social_copy_with_llm(
     """
     has_thinking = enable_thinking and detect_model_thinking_capability(model_name)
 
-    system_prompt = """Eres un estratega senior de contenido viral y copywriter profesional para TikTok, Instagram Reels, YouTube Shorts y X.
-Tu objetivo es analizar minuciosamente la transcripción del video y redactar un paquete de copywriting irresistible, diseñado para maximizar visualizaciones, retención y comentarios.
+    system_prompt = """Eres un estratega senior de contenido viral y copywriter profesional para TikTok, Instagram Reels y YouTube Shorts.
+Tu objetivo es analizar minuciosamente la transcripción del clip y redactar un copy de alta retención, ultra-conciso y listo para publicar.
 
 REGLAS ESTRICTAS DE CONTENIDO:
-1. BASA TODO el contenido EXCLUSIVAMENTE en lo que realmente ocurre o se dice en la transcripción.
-2. PROHIBIDO generar textos genéricos o vacíos.
-3. Extrae las anécdotas, momentos de tensión, humor o frases clave del hablante.
+1. BASA TODO el texto EXCLUSIVAMENTE en lo que realmente ocurre o se dice en la transcripción. Cero invenciones o datos falsos.
+2. CERO RELLENO O FRASES CLICHÉ: Prohibido usar vocabulario genérico inflado ("sumérgete", "un viaje", "eleva tu nivel"). Habla en tono directo, conversacional y humano.
+3. CONCISIÓN OBLIGATORIA (MÁXIMO 2-3 LÍNEAS): En TikTok y Reels el texto largo tapa el video y molesta al espectador. La descripción debe ser breve y directa al grano.
+4. LÍMITE ESTRICTO DE HASHTAGS: Exactamente entre 3 y 5 hashtags relevantes (específicos del juego o tema + 1 de formato). Prohibido hacer listas largas de hashtags.
 
 Responde estrictamente en formato JSON con la siguiente estructura:
 {
   "hooks": [
-    "Gancho 1: Pregunta intrigante sobre lo que ocurrió en el video",
+    "Gancho 1: Pregunta o frase intrigante sobre lo que ocurrió (máx. 10 palabras)",
     "Gancho 2: Reacción a la jugada o momento clave",
     "Gancho 3: Frase directa con llamado de atención"
   ],
-  "caption": "Texto persuasivo de 2 a 4 líneas que resuma el momento sin spoiler final, listo para pegar en la descripción.",
-  "cta": "Llamado a la acción invitando a opinar en comentarios.",
-  "hashtags": ["#tema_especifico", "#gaming", "#clipviral", "#shorts", "#humor"],
-  "full_copy": "Texto completo formateado listo para copiar y pegar en redes (incluyendo gancho, descripción, CTA y hashtags)."
+  "caption": "1 o 2 oraciones breves de contexto o intriga sin spoiler.",
+  "cta": "¿Qué habrías hecho tú? Déjalo en comentarios.",
+  "hashtags": ["#tema_especifico", "#gaming", "#shorts", "#viral"],
+  "full_copy": "Gancho punchy\\n1 o 2 oraciones breves de contexto.\\n¿Qué opinas? Déjalo en comentarios.\\n#tema #shorts #viral"
 }
 
-Escribe en Español natural, convincente y directo."""
+Escribe en Español natural, directo y sin guiones largos (em dashes)."""
 
     user_prompt = f"Transcripción del video:\n{transcript_text[:6000]}"
     if extra_context:
@@ -990,7 +1004,7 @@ def repair_and_extract_copy_json(raw_text: str) -> Dict[str, Any]:
         "hooks": hooks[:3] if hooks else ["¡Mira este momento increíble!"],
         "caption": caption_m.group(1).strip() if caption_m else "Un momento destacado del stream.",
         "cta": cta_m.group(1).strip() if cta_m else "¿Qué opinas de esta jugada? Comenta abajo.",
-        "hashtags": hashtags[:5] if hashtags else ["#autoshorts", "#viral", "#clips"]
+        "hashtags": hashtags[:5] if hashtags else ["#shorts", "#viral", "#gaming"]
     }
     return _normalize_social_copy_dict(fallback_data)
 
@@ -1002,31 +1016,62 @@ def _normalize_social_copy_dict(data: Dict[str, Any]) -> Dict[str, Any]:
     elif not isinstance(hooks, list):
         hooks = []
 
-    caption = str(data.get("caption") or data.get("description") or "").strip()
-    cta = str(data.get("cta") or "").strip()
+    cleaned_hooks = []
+    for h in hooks:
+        h_str = str(h).strip().replace("—", "-")
+        h_str = re.sub(r"^(?:Gancho|Hook)\s*\d*[:\s\-]+", "", h_str, flags=re.IGNORECASE).strip()
+        if h_str:
+            cleaned_hooks.append(h_str)
 
-    hashtags = data.get("hashtags", [])
-    if isinstance(hashtags, str):
-        hashtags = [h.strip() for h in hashtags.split() if h.startswith("#")]
-    elif isinstance(hashtags, list):
-        hashtags = [f"#{str(h).lstrip('#')}" for h in hashtags if str(h).strip()]
-    else:
-        hashtags = ["#autoshorts", "#clips", "#viral"]
+    caption = str(data.get("caption") or data.get("description") or "").strip().replace("—", "-")
+    cta = str(data.get("cta") or "").strip().replace("—", "-")
 
-    full_copy = data.get("full_copy")
+    # Clean hashtags: ensure # prefix, strip non-alphanumeric, deduplicate
+    raw_hashtags = data.get("hashtags", [])
+    extracted = []
+    if isinstance(raw_hashtags, str):
+        extracted = [h.strip() for h in raw_hashtags.split() if h.startswith("#")]
+    elif isinstance(raw_hashtags, list):
+        for h in raw_hashtags:
+            clean_tag = re.sub(r"[^\w]", "", str(h).strip())
+            if clean_tag:
+                extracted.append(f"#{clean_tag}")
+
+    seen = set()
+    hashtags = []
+    for tag in extracted:
+        lower = tag.lower()
+        if lower not in seen:
+            seen.add(lower)
+            hashtags.append(tag)
+
+    # Strictly enforce 3 to 5 hashtags
+    if len(hashtags) > 5:
+        hashtags = hashtags[:5]
+    elif len(hashtags) < 3:
+        for fallback_tag in ["#shorts", "#viral", "#gaming", "#clip"]:
+            if fallback_tag.lower() not in seen and len(hashtags) < 3:
+                seen.add(fallback_tag.lower())
+                hashtags.append(fallback_tag)
+
+    full_copy = str(data.get("full_copy") or "").strip().replace("—", "-")
     if not full_copy:
-        primary_hook = hooks[0] if hooks else "¡Momento destacado!"
+        primary_hook = cleaned_hooks[0] if cleaned_hooks else "¡Momento destacado!"
         parts = [primary_hook]
         if caption:
-            parts.append(f"\n{caption}")
+            parts.append(caption)
         if cta:
-            parts.append(f"\n👉 {cta}")
+            parts.append(cta)
         if hashtags:
-            parts.append(f"\n{' '.join(hashtags)}")
+            parts.append(" ".join(hashtags))
         full_copy = "\n".join(parts)
+    else:
+        # If full_copy was provided, ensure it includes clean hashtags if none were present
+        if not any(h in full_copy for h in hashtags) and hashtags:
+            full_copy += f"\n{' '.join(hashtags)}"
 
     return {
-        "hooks": hooks,
+        "hooks": cleaned_hooks if cleaned_hooks else ["¡Mira este momento increíble!"],
         "caption": caption,
         "cta": cta,
         "hashtags": hashtags,

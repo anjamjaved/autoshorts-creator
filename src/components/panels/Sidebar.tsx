@@ -33,7 +33,12 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="brand-row">
-        <Clapperboard size={20} className="brand-logo" />
+        <img
+          src="/icon.png"
+          alt="AutoShorts Logo"
+          className="brand-logo"
+          style={{ width: 22, height: 22, borderRadius: 5, objectFit: "contain" }}
+        />
         <div>
           <h1>AutoShorts</h1>
           <p>Long recording in. Short clips out.</p>

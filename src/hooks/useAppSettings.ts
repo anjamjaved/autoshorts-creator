@@ -9,6 +9,18 @@ import type {
   WhisperModel,
 } from "../types";
 
+export const DEFAULT_MOMENTS_PROMPT = `Eres un Editor de Video de Alto Rendimiento y Experto en Retención para TikTok, YouTube Shorts y Reels. Tu misión es analizar la transcripción con marcas de tiempo y extraer exclusivamente los momentos con mayor potencial de viralidad.
+
+Criterios de selección obligatorios:
+1. Ganchos de Alto Impacto: Frases polémicas, preguntas intrigantes, remates o revelaciones clave en los primeros 3 segundos.
+2. Picos Emocionales y Gameplay: Momentos que describan jugadas destacadas, clutches, risas contagiosas, gritos, enfados (rage quits), sustos o celebraciones.
+3. Contenido Narrativo y Humor: Fails cómicos, anécdotas rápidas, debates intensos o explicaciones de alto valor simplificadas.
+
+Reglas estrictas de segmentación:
+- Auto-conclusión: El clip debe tener un inicio claro, un desarrollo completo y un remate o conclusión lógica. No debe requerir contexto externo.
+- Cortes limpios: Nunca cortes una palabra o frase a la mitad. Usa los silencios o pausas naturales como puntos de corte.
+- Exclusiones: Ignora introducciones lentas, transiciones silenciosas, pausas largas de lectura y segmentos puramente promocionales.`;
+
 export function useAppSettings() {
   const [environment, setEnvironment] = useState<EnvironmentStatus | null>(null);
   const [telemetry, setTelemetry] = useState<HardwareTelemetry | null>(null);
@@ -36,7 +48,7 @@ export function useAppSettings() {
   const [customMomentsPrompt, setCustomMomentsPrompt] = useState<string>(() => {
     return localStorage.getItem("autoshorts_custom_moments_prompt") || "";
   });
-  const [defaultMomentsPrompt, setDefaultMomentsPrompt] = useState<string>("");
+  const [defaultMomentsPrompt, setDefaultMomentsPrompt] = useState<string>(DEFAULT_MOMENTS_PROMPT);
 
   const [enableThinking, setEnableThinking] = useState<boolean>(() => {
     return localStorage.getItem("autoshorts_enable_thinking") === "true";

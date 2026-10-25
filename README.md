@@ -1,14 +1,20 @@
-# AutoShorts
+<div align="center">
+  <img src="icon.png" width="120" height="120" alt="AutoShorts Logo" style="border-radius: 18px; margin-bottom: 12px;" />
+  <h1>AutoShorts</h1>
+  <p><strong>Suite de Escritorio 100% Local para Extracción y Edición de Clips Verticales Virales</strong></p>
 
-[![Python 3.11](https://img.shields.io/badge/Python-3.11%20Recomendado-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![React 19](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript 5.7](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite 6](https://img.shields.io/badge/Vite-6.1-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![PyWebView 5](https://img.shields.io/badge/PyWebView-5.0-4B8BBE?logo=python&logoColor=white)](https://pywebview.flowrl.com/)
-[![FFmpeg](https://img.shields.io/badge/FFmpeg-Requerido-007808?logo=ffmpeg&logoColor=white)](https://ffmpeg.org/)
-[![faster--whisper](https://img.shields.io/badge/faster--whisper-CTranslate2-orange)](https://github.com/SYSTRAN/faster-whisper)
-[![pnpm](https://img.shields.io/badge/Gestor-pnpm-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Python 3.11](https://img.shields.io/badge/Python-3.11%20Recomendado-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+  [![React 19](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+  [![TypeScript 5.7](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+  [![Vite 6](https://img.shields.io/badge/Vite-6.1-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+  [![PyWebView 5](https://img.shields.io/badge/PyWebView-5.0-4B8BBE?logo=python&logoColor=white)](https://pywebview.flowrl.com/)
+  [![FFmpeg](https://img.shields.io/badge/FFmpeg-Requerido-007808?logo=ffmpeg&logoColor=white)](https://ffmpeg.org/)
+  [![faster--whisper](https://img.shields.io/badge/faster--whisper-CTranslate2-orange)](https://github.com/SYSTRAN/faster-whisper)
+  [![pnpm](https://img.shields.io/badge/Gestor-pnpm-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+</div>
+
+---
 
 **AutoShorts** es una suite de escritorio a medida y de código abierto especializada en la **extracción, detección inteligente y edición de clips verticales virales (9:16 Shorts, TikToks y Reels)** a partir de grabaciones extensas de directos (Twitch, Kick o YouTube) y podcasts de 1 a 4+ horas.
 
@@ -104,15 +110,19 @@ flowchart TB
 
 ### 1. Deteccion Inteligente de Momentos
 
-El motor de escaneo combina analisis de volumen acustico con comprension semantica del dialogo para aislar los fragmentos mas atractivos de un stream:
+El motor de escaneo combina analisis de volumen acustico con comprension semantica del dialogo para aislar los fragmentos con mayor potencial de viralidad en TikTok, YouTube Shorts e Instagram Reels:
 
+- **Prompt Fusionado de Alta Retencion:** El sistema opera con un prompt base altamente especializado que instruye al modelo bajo criterios de edicion profesional:
+  - *Ganchos de Alto Impacto:* Frases polemicas, preguntas intrigantes, remates o revelaciones en los primeros 3 segundos.
+  - *Picos Emocionales y Gameplay:* Clutches, jugadas destacadas, risas contagiosas, gritos, enfados (rage quits), sustos o celebraciones.
+  - *Contenido Narrativo y Humor:* Fails comicos, anecdotas rapidas, debates intensos o explicaciones de alto valor simplificadas.
+- **Reglas Estrictas de Segmentacion:**
+  - *Auto-conclusion:* Cada clip debe poseer inicio claro, desarrollo y remate o conclusion logica, sin depender de contexto externo.
+  - *Cortes limpios:* Jamas corta una palabra o frase a la mitad, usando silencios y pausas naturales como puntos de transicion.
+  - *Exclusiones:* Descarta introducciones lentas, transiciones vacias y segmentos promocionales.
+- **Capa Tecnica Invisible:** La interfaz de configuracion muestra unicamente las directrices editoriales limpias. El contrato JSON estricto (`candidates`/`clips`), los timestamps y los requisitos de duracion se gestionan internamente en el backend.
 - **Segmentacion adaptativa con solapamiento:** Divide grabaciones masivas en bloques de 10 minutos con 30 segundos de solapamiento mutuo para no cortar anecdotas o jugadas situadas en el limite de un bloque.
 - **Analisis acustico RMS en milisegundos:** Algoritmo en Python puro (`wave`, `struct`, `math`) que procesa 1 hora de audio en menos de 1.6 segundos. Si el creador esta concentrado en una jugada tensa sin hablar, el detector identifica picos sonoros e inyecta la etiqueta `[CLUTCH / ACCION ACUSTICA]` en la transcripcion para que el LLM no descarte el fragmento por falta de dialogo.
-- **Perfiles tematicos de contenido:**
-  - *Gaming:* Bajas consecutivas, jugadas clutch, tension y gritos/reacciones.
-  - *Tutorial:* Consejos clave, explicaciones tecnicas y pasos directos.
-  - *Podcast / Charla:* Anecdotas personales, debates y momentos graciosos.
-  - *General:* Deteccion equilibrada para cualquier tipo de emision.
 - **Duraciones objetivo configurables:** Generacion de clips con rangos de tiempo ajustables de 30s, 1m, 2m, 3m o 5m.
 
 ---
@@ -137,26 +147,25 @@ El motor multimedia genera subtitulos en formato SubStation Alpha (`.ass`) con s
 
 ---
 
-### 3. IA Local y Gestion Inteligente de VRAM
+### 3. IA Local y Gestion Inteligente de Hardware
 
-AutoShorts funciona integramente con modelos instalados en tu propio equipo:
+AutoShorts funciona integramente con modelos instalados en tu propio equipo, sin cuotas ni dependencias cloud:
 
-- **faster-whisper (CTranslate2):** Transcripcion ultra-rapida con soporte de precision mixta (CUDA FP16 / float32 / int8). Hasta 4 veces mas rapido que el Whisper original consumiendo la mitad de VRAM.
-- **Ollama (100% Offline y Gratuito):** Compatible con `qwen2.5`, `qwen3.5`, `llama3.2`, `mistral` y `gemma2`. Incluye catalogo y descarga de modelos desde la propia interfaz.
-- **LM Studio:** Auto-deteccion del modelo activo conectando con el endpoint local `/v1/models`.
-- **Descarga inmediata de VRAM (`keep_alive: 0`):** Al finalizar la deteccion o generacion de copys, AutoShorts ordena al servidor local liberar de inmediato la memoria de la tarjeta grafica. Esto permite jugar o editar video sin caidas de rendimiento por VRAM ocupada.
-- **Supresion de etiquetas de razonamiento:** Oculta pensamientos intermedios (`<think>`) en modelos razonadores para entregar respuestas limpias en formato JSON sin consumo superfluo de tokens.
+- **Inicio Directo sin Bloqueos:** El software inicia directamente en el Dashboard de proyectos. Detecta automaticamente si LM Studio u Ollama estan activos sin imponer descargas forzosas ni modales de bienvenida bloqueantes.
+- **Deteccion Dinamica de VRAM y GPU:** Evalua la memoria grafica real disponible en tu sistema (4GB, 6GB, 8GB, 12GB, 16GB o CPU) para clasificar dinamicamente los modelos en tres niveles (`Optimo`, `Moderado` y `Pesado`), adaptandose con precision al hardware de cualquier usuario.
+- **faster-whisper (CTranslate2):** Transcripcion ultra-rapida con soporte de precision mixta (CUDA FP16 / float32 / int8). Los modelos se agrupan inteligentemente priorizando los ya descargados en disco.
+- **Ollama y LM Studio:** Compatibilidad completa con ambos motores locales (`qwen2.5`, `llama3.2`, `mistral`, `gemma2`, `gemma4`, etc.).
+- **Descarga inmediata de VRAM (`keep_alive: 0`):** Al finalizar la deteccion o generacion de copys, AutoShorts ordena al servidor local liberar de inmediato la memoria de la tarjeta grafica, permitiendo jugar o editar sin caidas de rendimiento.
 
 ---
 
-### 4. Modulo Quick Copy para Transcripciones y Subtitulos
+### 4. Modulo de Social Copywriting (TikTok, Shorts y Reels)
 
-Permite redactar copys sociales persuasivos (gancho de apertura, cuerpo del post, llamada a la accion y hashtags virales) a partir de tres fuentes:
+Generador de copys optimizado bajo estandares de retencion y comunicacion directa (sin relleno de IA):
 
-- **Archivos de subtitulos (`.srt`, `.vtt`, `.txt`):** Analizador sintactico que purga codigos de tiempo y etiquetas de formato para entregar al modelo unicamente el dialogo limpio.
-- **Texto pegado:** Entrada manual directa con conteo de palabras y caracteres en tiempo real.
-- **Archivo multimedia directo:** Transcripcion y redaccion de copy en un solo proceso automatico.
-- **Rehacer copy en clips guardados:** Boton para regenerar el texto promocional de cualquier clip basandose en su transcripcion real sin alterar su titulo ni recortar de nuevo el video.
+- **Formato Ultra-Conciso (2 a 3 lineas):** En TikTok e Instagram Reels los textos extensos tapan los subtitulos del video y activan el boton "...mas". AutoShorts produce textos compactos con gancho intrigante, una oracion de contexto y llamada a la accion conversacional.
+- **Limite Estricto de 3 a 5 Hashtags:** Previene penalizaciones algoritmicas por hashtag spam, forzando exactamente entre 3 y 5 etiquetas altamente relevantes.
+- **Alineacion Exacta con la Transcripcion:** La funcion de "Rehacer Copy" toma unicamente las palabras habladas entre los timestamps reales de inicio y fin (`startSec` y `endSec`) del clip seleccionado, preservando intacto el titulo original.
 
 ---
 

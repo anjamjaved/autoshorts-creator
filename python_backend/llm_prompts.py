@@ -93,12 +93,17 @@ def parse_markdown_clips(text: str) -> List[Dict[str, Any]]:
     return results
 
 
-DEFAULT_MOMENTS_PROMPT = """Eres un editor profesional de clips virales para TikTok, YouTube Shorts y Reels.
-Tu misión es encontrar los mejores momentos del video o stream:
-- Jugadas destacadas, clutches, partidas épicas o acción intensa.
-- Momentos divertidos, risas, gritos, enfados, sustos o celebraciones.
-- Fails cómicos, anécdotas, debates, discusiones o explicaciones clave.
-- Remates y frases de alto impacto que enganchen desde el primer segundo."""
+DEFAULT_MOMENTS_PROMPT = """Eres un Editor de Video de Alto Rendimiento y Experto en Retención para TikTok, YouTube Shorts y Reels. Tu misión es analizar la transcripción con marcas de tiempo y extraer exclusivamente los momentos con mayor potencial de viralidad.
+
+Criterios de selección obligatorios:
+1. Ganchos de Alto Impacto: Frases polémicas, preguntas intrigantes, remates o revelaciones clave en los primeros 3 segundos.
+2. Picos Emocionales y Gameplay: Momentos que describan jugadas destacadas, clutches, risas contagiosas, gritos, enfados (rage quits), sustos o celebraciones.
+3. Contenido Narrativo y Humor: Fails cómicos, anécdotas rápidas, debates intensos o explicaciones de alto valor simplificadas.
+
+Reglas estrictas de segmentación:
+- Auto-conclusión: El clip debe tener un inicio claro, un desarrollo completo y un remate o conclusión lógica. No debe requerir contexto externo.
+- Cortes limpios: Nunca cortes una palabra o frase a la mitad. Usa los silencios o pausas naturales como puntos de corte.
+- Exclusiones: Ignora introducciones lentas, transiciones silenciosas, pausas largas de lectura y segmentos puramente promocionales."""
 
 
 def build_system_prompt(
@@ -114,23 +119,37 @@ def build_system_prompt(
         focus_text = custom_prompt.strip()
     else:
         focus_dict = {
-            "gaming": """Eres un editor profesional de clips de GAMING para TikTok, YouTube Shorts y Reels virales.
-Tu misión es encontrar los mejores momentos de gameplays, directos o torneos:
-- Jugadas destacadas, clutches, kills o partidas épicas.
-- Momentos divertidos, risas, gritos, enfados (rage), sustos o celebraciones.
-- Fails cómicos, bugs o troleos.
-- Anuncios de torneos, retos 1v1, fechas o reglas del juego.
-- Remates y anécdotas entretenidas.""",
-            "tutorial": """Eres un editor profesional de contenido educativo, tutoriales y avisos para Shorts/Reels/TikTok.
-Tu misión es encontrar los mejores segmentos con valor informativo:
-- Explicaciones claras de cómo hacer algo o resolver un problema.
-- Trucos (tips, hacks) o configuraciones clave.
-- Anuncios oficiales, convocatorias o fechas importantes.""",
-            "podcast": """Eres un estratega de redes sociales buscando momentos virales en podcasts, entrevistas y charlas.
-Tu misión es encontrar historias fascinantes, opiniones controvertidas o lecciones impactantes.""",
+            "gaming": """Eres un Editor de Video de Alto Rendimiento y Experto en Retención de GAMING para TikTok, YouTube Shorts y Reels virales.
+Tu misión es analizar la transcripción y extraer exclusivamente los momentos con mayor potencial de viralidad:
+1. Ganchos de Alto Impacto: Frases polémicas, jugadas increíbles o revelaciones en los primeros 3 segundos.
+2. Picos Emocionales y Gameplay: Clutches, kills destacadas, risas, gritos, enfados (rage quits), sustos o celebraciones.
+3. Contenido Narrativo y Humor: Fails cómicos, troleos, anécdotas rápidas o remates entretenidos.
+
+Reglas estrictas de segmentación:
+- Auto-conclusión: El clip debe tener inicio claro, desarrollo completo y remate o desenlace lógico.
+- Cortes limpios: Nunca cortes a mitad de frase. Usa silencios naturales como puntos de corte.
+- Exclusiones: Ignora intros lentas, pausas largas de lectura y segmentos promocionales.""",
+            "tutorial": """Eres un Editor de Video de Alto Rendimiento y Experto en Retención para tutoriales y contenido educativo en TikTok, Shorts y Reels.
+Tu misión es extraer los segmentos con mayor valor informativo y viral:
+- Explicaciones claras de cómo hacer algo o resolver un problema desde los primeros segundos.
+- Trucos (tips, hacks) o configuraciones clave explicadas de forma ágil y entretenida.
+
+Reglas estrictas de segmentación:
+- Auto-conclusión: El clip debe tener inicio, explicación y conclusión lógica clara.
+- Cortes limpios: Cortes en pausas naturales sin cortar frases a la mitad.
+- Exclusiones: Ignora saludos largos, pausas vacías y contenido de relleno.""",
+            "podcast": """Eres un Estratega de Redes Sociales y Editor de Clips Virales para podcasts y entrevistas en TikTok, Shorts y Reels.
+Tu misión es encontrar historias fascinantes, opiniones controvertidas o lecciones impactantes:
+- Ganchos de alto impacto en los primeros 3 segundos.
+- Relatos, confesiones o reflexiones que despierten curiosidad o debate inmediato.
+
+Reglas estrictas de segmentación:
+- Auto-conclusión: El segmento debe entenderse por sí mismo sin requerir contexto externo previo.
+- Cortes limpios: Aprovecha las pausas entre oraciones o cambios de turno al hablar.
+- Exclusiones: Ignora presentaciones protocolares y segmentos puramente promocionales.""",
             "general": DEFAULT_MOMENTS_PROMPT
         }
-        focus_text = focus_dict.get(content_type, focus_dict["gaming"])
+        focus_text = focus_dict.get(content_type, DEFAULT_MOMENTS_PROMPT)
 
     thinking_guide = ""
     if has_thinking:
@@ -151,13 +170,13 @@ REGLAS DE DURACIÓN Y TIMESTAMPS:
 - 'hook_title': Titular corto y punchy de 3 a 7 palabras para mostrar en pantalla grande al inicio del clip (ej. "¡Clutch 1v3 Imposible!", "¿Quién me invitó a la sala?", "El fallo más tonto").
 - 'rationale': Explicación breve de por qué este momento es entretenido o viral.
 - 'virality': Desglose de puntuación viral (0 a 25 cada métrica): {{"hook_score": 24, "engagement_score": 23, "value_score": 19, "shareability_score": 24, "hook_type": "reacción"}} (donde hook_type es: "pregunta", "reacción", "anécdota", "contraste" o "destacado").
-- 'description': Descripción optimizada para redes sociales (TikTok, Reels, Shorts, X) de 1 a 2 frases vendedoras invitando a interactuar, con 3 a 4 hashtags relevantes (ej. #gaming #clipviral).{thinking_guide}
+- 'description': Descripción concisa optimizada para TikTok, Reels y Shorts (1 a 2 frases vendedoras invitando a interactuar con 3 a 5 hashtags relevantes).{thinking_guide}
 
 REGLAS ESTRICTAS DE RESPUESTA:
 - NUNCA devuelvas puntos suspensivos ("...") ni valores en 0.0.
 - Extrae momentos reales con timestamps y textos concretos de la transcripción.
 - Devuelve entre 1 y 5 candidatos en formato JSON exactamente con esta estructura:
-{{"candidates":[{{"start":15.0,"end":315.0,"score":0.95,"hook":"¡Jugada Épica y Victoria!","hook_title":"¡Clutch 1v3 Imposible!","rationale":"Momento de alta tensión y clutch impresionante","virality":{{"hook_score":24,"engagement_score":23,"value_score":19,"shareability_score":24,"hook_type":"reacción"}},"description":"¡Mira lo que pasó en esta partida! 🔥 #gaming #viral"}}]}}
+{{"candidates":[{{"start":15.0,"end":45.0,"score":0.95,"hook":"¡Jugada Épica y Victoria!","hook_title":"¡Clutch 1v3 Imposible!","rationale":"Momento de alta tensión y clutch impresionante","virality":{{"hook_score":24,"engagement_score":23,"value_score":19,"shareability_score":24,"hook_type":"reacción"}},"description":"¡Mira lo que pasó en esta partida! ¿Habrías hecho lo mismo? 👇 #gaming #viral #shorts"}}]}}
 
 IMPORTANTE: Analiza en español y genera todos los textos estrictamente en Español. No traduzcas al inglés."""
 
